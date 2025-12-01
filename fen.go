@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var charToUint8 = [...]uint8{
+var charToint = [...]int{
 	'P': PAWN,
 	'N': KNIGHT,
 	'B': BISHOP,
@@ -20,7 +20,7 @@ var charToUint8 = [...]uint8{
 	'k': KING,
 }
 
-var Uint8ToChar = [...]uint8{
+var intToChar = [...]int{
 	PAWN:   'P',
 	KNIGHT: 'N',
 	BISHOP: 'B',
@@ -36,26 +36,26 @@ func Start() Position {
 func FromFen(fen string) Position {
 	var split []string = strings.Split(fen, " ")
 
-	var rank uint8 = 7
-	var file uint8 = 0
+	var rank int = 7
+	var file int = 0
 
-	var c uint8
-	var pieceType uint8
-	var square uint8
-	var color uint8
+	var c byte
+	var pieceType int
+	var square int
+	var color int
 
 	var pieceBB [12]uint64
 	var allBB [2]uint64
 	var occupant uint64
-	var to_move uint8
+	var to_move int
 	var castle_rights uint8
-	var ep_square uint8 = 64 //sentinel value
-	var full_move uint16
-	var half_move uint8
-	var kings [2]uint8
+	var ep_square int = 64 //sentinel value
+	var full_move int
+	var half_move int
+	var kings [2]int
 	var moveStack [512]Move
 	var stateStack [512]State
-	var ply uint16
+	var ply int
 
 	//board
 	for i := range split[0] {
@@ -67,7 +67,7 @@ func FromFen(fen string) Position {
 			continue
 		}
 		if '1' <= c && c <= '8' {
-			file += c - '0'
+			file += int(c) - '0'
 			continue
 		}
 
@@ -77,7 +77,7 @@ func FromFen(fen string) Position {
 			color = 0
 		}
 
-		pieceType = charToUint8[c]
+		pieceType = charToint[c]
 		square = rank*8 + file
 
 		pieceBB[6*color+pieceType] |= (1 << square)
@@ -107,15 +107,15 @@ func FromFen(fen string) Position {
 	}
 	//ep square
 	if split[3] != "-" {
-		ep_square = 8*(split[3][1]-'1') + split[3][0] - 'a'
+		ep_square = int(8*(split[3][1]-'1') + split[3][0] - 'a')
 	}
-	var x uint64
+	var x int64
 	//full move
-	x, _ = strconv.ParseUint(split[4], 10, 16)
-	full_move = uint16(x)
+	x, _ = strconv.ParseInt(split[4], 10, 16)
+	full_move = int(x)
 	//half move
-	x, _ = strconv.ParseUint(split[5], 10, 8)
-	half_move = uint8(x)
+	x, _ = strconv.ParseInt(split[5], 10, 8)
+	half_move = int(x)
 
 	//derived bit boards
 	for i := range 6 {
@@ -132,12 +132,12 @@ func FromFen(fen string) Position {
 // TODO: when exporting mid make/unmake states dont make sense look into it
 func (p *Position) exportFen() string {
 	var sb strings.Builder
-	var count uint8
+	var count int
 
-	var board [64]uint8
+	var board [64]byte
 	for p, bb := range p.pieceBB {
 		for bb != 0 {
-			board[popLSB(&bb)] = uint8(p) + 1
+			board[popLSB(&bb)] = byte(p + 1)
 		}
 	}
 	for rank := 7; rank >= 0; rank-- {
@@ -150,13 +150,13 @@ func (p *Position) exportFen() string {
 				continue
 			}
 			if count > 0 {
-				sb.WriteByte(count + '0')
+				sb.WriteByte(byte(count + '0'))
 				count = 0
 			}
-			sb.WriteByte(Uint8ToChar[(c-1)%6] + (c-1)/6*32)
+			sb.WriteByte(byte(intToChar[(c-1)%6]) + (c-1)/6*32)
 		}
 		if count > 0 {
-			sb.WriteByte(count + '0')
+			sb.WriteByte(byte(count + '0'))
 			count = 0
 		}
 		if rank != 0 {
@@ -190,14 +190,14 @@ func (p *Position) exportFen() string {
 		sb.WriteString(" - ")
 	} else {
 		sb.WriteByte(' ')
-		sb.WriteByte('a' + p.ep_square%8)
-		sb.WriteByte('1' + p.ep_square/8)
+		sb.WriteByte(byte('a' + p.ep_square&7))
+		sb.WriteByte(byte('1' + p.ep_square>>3))
 		sb.WriteByte(' ')
 	}
 	var buf [8]byte
-	b := strconv.AppendUint(buf[:0], uint64(p.full_move), 10)
+	b := strconv.AppendInt(buf[:0], int64(p.full_move), 10)
 	b = append(b, ' ')
-	b = strconv.AppendUint(b, uint64(p.half_move), 10)
+	b = strconv.AppendInt(b, int64(p.half_move), 10)
 	sb.Write(b)
 
 	return sb.String()

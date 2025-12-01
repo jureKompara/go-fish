@@ -37,4 +37,10 @@ func main() {
 		fmt.Println("----------------------------------")
 	}
 	test(5)
+
+	/*for i := range 64 {
+		pirntBB(GenRookMask(i))
+		println("------------------------------")
+	}*/
+
 }

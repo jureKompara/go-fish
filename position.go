@@ -2,7 +2,7 @@ package main
 
 // PAWN=0...KING=5
 const (
-	PAWN uint8 = iota
+	PAWN int = iota
 	KNIGHT
 	BISHOP
 	ROOK
@@ -14,22 +14,22 @@ type Position struct {
 	pieceBB       [12]uint64 //per piece per color bitboards
 	allBB         [2]uint64  //per color bitboards
 	occupant      uint64     //is there any piece here ass bitboard
-	to_move       uint8      //side to move 0=white 1=black
+	to_move       int        //side to move 0=white 1=black
 	castle_rights uint8      //0b1111 4 bits denote the castling rights 0123-KQkq
-	ep_square     uint8      //denotes en passant square
-	full_move     uint16     //fullmove counter
-	half_move     uint8      //halfmove counter
-	kings         [2]uint8   //per color king position
+	ep_square     int        //denotes en passant square
+	full_move     int        //fullmove counter
+	half_move     int        //halfmove counter
+	kings         [2]int     //per color king position
 	moveStack     [512]Move  //stock of move structs
 	stateStack    [512]State //stack of state structs
-	ply           uint16     //the current ply so we can index into the stacks
+	ply           int        //the current ply so we can index into the stacks
 }
 
 func (p *Position) Save() {
-	p.stateStack[p.ply] = State{p.castle_rights, p.ep_square, p.half_move}
+	p.stateStack[p.ply] = State{p.castle_rights, uint8(p.ep_square), uint8(p.half_move)}
 }
 
-func (p *Position) IsAttacked(sq, by uint8) bool {
+func (p *Position) IsAttacked(sq int, by int) bool {
 	if p.pseudoSlider(sq, 1-by, bishOff[:])&
 		(p.pieceBB[BISHOP+by*6]|p.pieceBB[QUEEN+by*6]) != 0 {
 		return true
@@ -50,7 +50,7 @@ func (p *Position) IsAttacked(sq, by uint8) bool {
 	return false
 }
 
-func (p *Position) WhatPieceAt(sq, color uint8) uint8 {
+func (p *Position) WhatPieceAt(sq int, color int) int {
 	for piece := PAWN; piece <= KING; piece++ {
 		if Has(p.pieceBB[color*6+piece], sq) {
 			return piece
@@ -89,7 +89,7 @@ func (p *Position) Make(move Move) {
 	}
 	p.ep_square = 64
 
-	ep := uint8(int(to) - 8*(1-2*int(p.to_move)))
+	ep := to - 8*(1-2*p.to_move)
 	if piece == PAWN || flags&ISCAP != 0 {
 		if flags&DP != 0 {
 			p.ep_square = ep
@@ -126,7 +126,7 @@ func (p *Position) Make(move Move) {
 	if piece == KING {
 		p.castle_rights &= 0b1100 >> (2 * p.to_move)
 		p.kings[p.to_move] = to
-		homeRank := p.to_move * 7 * 8
+		homeRank := p.to_move * 56
 		if flags&KCASTLE != 0 {
 			clear(&(p.pieceBB[ROOK+p.to_move*6]), 7+homeRank)
 			clear(&(p.allBB[p.to_move]), 7+homeRank)
@@ -181,9 +181,10 @@ func (p *Position) Unmake(move Move) {
 		set(&(p.allBB[p.to_move]), to)
 		set(&(p.occupant), to)
 	} else if flags&EP != 0 {
-		set(&(p.pieceBB[PAWN+p.to_move*6]), to+8*(1-2*p.to_move))
-		set(&(p.allBB[p.to_move]), to+8*(1-2*p.to_move))
-		set(&(p.occupant), to+8*(1-2*p.to_move))
+		behind := to + 8*(1-2*p.to_move)
+		set(&(p.pieceBB[PAWN+p.to_move*6]), behind)
+		set(&(p.allBB[p.to_move]), behind)
+		set(&(p.occupant), behind)
 	}
 
 	if piece == KING {
@@ -211,8 +212,8 @@ func (p *Position) Unmake(move Move) {
 
 	//obvious stuff we can just set
 	p.castle_rights = state.castleRights
-	p.ep_square = state.epSquare
-	p.half_move = state.halfmove
+	p.ep_square = int(state.epSquare)
+	p.half_move = int(state.halfmove)
 
 	if p.to_move == 0 {
 		p.full_move--

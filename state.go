@@ -7,7 +7,3 @@ type State struct {
 	halfmove     uint8
 	//add hash and other stuff that is nice to cache here
 }
-
-func NewState(cr, ep, hm, cap uint8) State {
-	return State{cr, ep, hm}
-}

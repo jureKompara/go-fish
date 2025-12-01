@@ -27,7 +27,7 @@ func FileMasks() {
 }
 
 // getPawnBB returns diagonal attack targets for a pawn on `sq`; color=true for white.
-func getPawnBB(sq uint8, color uint8) uint64 {
+func getPawnBB(sq, color int) uint64 {
 	bb := uint64(1) << sq
 	if color == 0 {
 		return ((bb << 7) & ^h) | ((bb << 9) & ^a)
@@ -36,7 +36,7 @@ func getPawnBB(sq uint8, color uint8) uint64 {
 	}
 }
 
-func getPawnPushBB(sq uint8, color uint8) uint64 {
+func getPawnPushBB(sq, color int) uint64 {
 	bb := uint64(1) << sq
 	var out uint64
 	if color == 0 {
@@ -54,16 +54,14 @@ func getPawnPushBB(sq uint8, color uint8) uint64 {
 }
 
 // getSliderBB walks rays in `deltas` until an edge is hit; returns attack set.
-func getSliderBB(sq uint8, deltas []int8) uint64 {
+func getSliderBB(sq int, deltas []int) uint64 {
 	var out uint64
-	var prevF int8
-	var sq2 int8
 	for _, d := range deltas {
-		sq2 = int8(sq)
-		prevF = int8(sq) % 8
+		sq2 := sq
+		prevF := sq & 7
 		for {
 			sq2 += d
-			newF := sq2 % 8
+			newF := sq2 & 7
 			if sq2 > 63 || sq2 < 0 || math.Abs(float64(newF-prevF)) > 1 {
 				break
 			}
@@ -75,13 +73,12 @@ func getSliderBB(sq uint8, deltas []int8) uint64 {
 }
 
 // getKingBB is like slider but stops after a single step in each direction.
-func getKingBB(sq uint8) uint64 {
+func getKingBB(sq int) uint64 {
 	var out uint64
-	var prevF int8 = int8(sq) % 8
-	var sq2 int8
+	prevF := sq & 7
 	for _, d := range queenOff {
-		sq2 = int8(sq) + d
-		if sq2 > 63 || sq2 < 0 || math.Abs(float64(sq2%8-prevF)) > 1 {
+		sq2 := sq + d
+		if sq2 > 63 || sq2 < 0 || math.Abs(float64(sq2&7-prevF)) > 1 {
 			continue
 		}
 		out |= 1 << sq2
@@ -89,7 +86,7 @@ func getKingBB(sq uint8) uint64 {
 	return out
 }
 
-func getKnightBB(sq uint8) uint64 {
+func getKnightBB(sq int) uint64 {
 	bb := uint64(1) << sq
 	return ((bb << 17) & ^a) |
 		((bb >> 15) & ^a) |
@@ -104,14 +101,14 @@ func getKnightBB(sq uint8) uint64 {
 func GenerateAttackBoards() {
 	FileMasks()
 	for i := range 64 {
-		knight[i] = getKnightBB(uint8(i))
-		bishop[i] = getSliderBB(uint8(i), bishOff[:])
-		rook[i] = getSliderBB(uint8(i), rookOff[:])
-		queen[i] = getSliderBB(uint8(i), queenOff[:])
-		king[i] = getKingBB(uint8(i))
-		pawn[0][i] = getPawnBB(uint8(i), 0)
-		pawn[1][i] = getPawnBB(uint8(i), 1)
-		pawnPush[0][i] = getPawnPushBB(uint8(i), 0)
-		pawnPush[1][i] = getPawnPushBB(uint8(i), 1)
+		knight[i] = getKnightBB(i)
+		bishop[i] = getSliderBB(i, bishOff[:])
+		rook[i] = getSliderBB(i, rookOff[:])
+		queen[i] = getSliderBB(i, queenOff[:])
+		king[i] = getKingBB(i)
+		pawn[0][i] = getPawnBB(i, 0)
+		pawn[1][i] = getPawnBB(i, 1)
+		pawnPush[0][i] = getPawnPushBB(i, 0)
+		pawnPush[1][i] = getPawnPushBB(i, 1)
 	}
 }

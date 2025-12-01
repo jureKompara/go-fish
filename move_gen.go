@@ -1,9 +1,9 @@
 package main
 
 // movement offsets for sliders
-var bishOff = [4]int8{7, 9, -7, -9}
-var rookOff = [4]int8{1, 8, -1, -8}
-var queenOff = [8]int8{7, 9, -7, -9, 1, 8, -1, -8}
+var bishOff = [4]int{7, 9, -7, -9}
+var rookOff = [4]int{1, 8, -1, -8}
+var queenOff = [8]int{7, 9, -7, -9, 1, 8, -1, -8}
 
 // returns all pseudo legal moves in the position
 func (p *Position) pseudoAll() []Move {
@@ -33,11 +33,11 @@ func (p *Position) pseudoAll() []Move {
 	return moves
 }
 
-func (p *Position) pseudoKing(sq, color uint8) uint64 {
+func (p *Position) pseudoKing(sq int, color int) uint64 {
 	return king[sq] & ^p.allBB[color]
 }
 
-func (p *Position) GenKingMoves(sq, color uint8, mask uint64, moves *[]Move) {
+func (p *Position) GenKingMoves(sq int, color int, mask uint64, moves *[]Move) {
 	for mask != 0 {
 		to := popLSB(&mask)
 		flags := uint8(0)
@@ -73,16 +73,16 @@ func (p *Position) GenKingMoves(sq, color uint8, mask uint64, moves *[]Move) {
 	}
 }
 
-func (p *Position) pseudoPawn(sq, color uint8) uint64 {
+func (p *Position) pseudoPawn(sq, color int) uint64 {
 
-	front := int8(sq) + 8 - 16*int8(color)
+	front := sq + 8 - 16*color
 	//this should never happen
 	if front < 0 || front > 63 {
 		panic("Pawn wanted to jump over the edge")
 	}
 
 	//if the front square isnt empty
-	if Has(p.occupant, uint8(front)) {
+	if Has(p.occupant, front) {
 		return pawn[color][sq] & (p.allBB[1-color] | 1<<p.ep_square)
 	}
 
@@ -90,14 +90,14 @@ func (p *Position) pseudoPawn(sq, color uint8) uint64 {
 }
 
 // generates pawn moves
-func (p *Position) GenPawnMoves(sq, color uint8, mask uint64, moves *[]Move) {
+func (p *Position) GenPawnMoves(sq int, color int, mask uint64, moves *[]Move) {
 	for mask != 0 {
 		to := popLSB(&mask)
 		flags := uint8(0)
 
-		var capPiece uint8 = NOCAP
+		capPiece := NOCAP
 
-		if diff := int(to) - int(sq); diff == 16 || diff == -16 {
+		if diff := to - sq; diff == 16 || diff == -16 {
 			flags |= DP
 		}
 
@@ -121,13 +121,12 @@ func (p *Position) GenPawnMoves(sq, color uint8, mask uint64, moves *[]Move) {
 	}
 }
 
-func (p *Position) pseudoSlider(sq, color uint8, deltas []int8) uint64 {
+func (p *Position) pseudoSlider(sq int, color int, deltas []int) uint64 {
 	var out uint64
-	var prevF int8
-	var sq2 int8
+	var prevF int
 	for _, d := range deltas {
-		sq2 = int8(sq)
-		prevF = int8(sq) & 7 //this is esentialy sq%8
+		sq2 := sq
+		prevF = sq & 7 //this is esentialy sq%8
 		for {
 			sq2 += d
 			if sq2 > 63 || sq2 < 0 {
@@ -135,14 +134,14 @@ func (p *Position) pseudoSlider(sq, color uint8, deltas []int8) uint64 {
 			}
 			newF := sq2 & 7
 			df := newF - prevF
-			if df > 1 || df < -1 || Has(p.allBB[color], uint8(sq2)) {
+			if df > 1 || df < -1 || Has(p.allBB[color], sq2) {
 				break
 			}
 
 			out |= 1 << sq2
 			prevF = newF
 
-			if Has(p.allBB[1-color], uint8(sq2)) {
+			if Has(p.allBB[1-color], sq2) {
 				break
 			}
 		}
@@ -150,12 +149,12 @@ func (p *Position) pseudoSlider(sq, color uint8, deltas []int8) uint64 {
 	return out
 }
 
-func (p *Position) pseudoKnight(sq, color uint8) uint64 {
+func (p *Position) pseudoKnight(sq int, color int) uint64 {
 	return knight[sq] & ^p.allBB[color]
 }
 
 // generates knight and slide moves becouse they have no special cases
-func (p *Position) GenGenericMoves(sq, color, piece uint8, mask uint64, moves *[]Move) {
+func (p *Position) GenGenericMoves(sq int, color, piece int, mask uint64, moves *[]Move) {
 	for mask != 0 {
 		to := popLSB(&mask)
 		flags := uint8(0)
