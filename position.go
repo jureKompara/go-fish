@@ -30,15 +30,15 @@ func (p *Position) Save() {
 }
 
 func (p *Position) IsAttacked(sq, by uint8) bool {
+	if p.pseudoSlider(sq, 1-by, bishOff[:])&
+		(p.pieceBB[BISHOP+by*6]|p.pieceBB[QUEEN+by*6]) != 0 {
+		return true
+	}
 	if knight[sq]&p.pieceBB[KNIGHT+by*6] != 0 {
 		return true
 	}
 	if p.pseudoSlider(sq, 1-by, rookOff[:])&
 		(p.pieceBB[ROOK+by*6]|p.pieceBB[QUEEN+by*6]) != 0 {
-		return true
-	}
-	if p.pseudoSlider(sq, 1-by, bishOff[:])&
-		(p.pieceBB[BISHOP+by*6]|p.pieceBB[QUEEN+by*6]) != 0 {
 		return true
 	}
 	if pawn[1-by][sq]&p.pieceBB[PAWN+by*6] != 0 {
@@ -50,13 +50,13 @@ func (p *Position) IsAttacked(sq, by uint8) bool {
 	return false
 }
 
-func (p *Position) WhatPieceAt(sq, color uint8) (uint8, bool) {
+func (p *Position) WhatPieceAt(sq, color uint8) uint8 {
 	for piece := PAWN; piece <= KING; piece++ {
 		if Has(p.pieceBB[color*6+piece], sq) {
-			return piece, true
+			return piece
 		}
 	}
-	return NOCAP, false
+	return NOCAP
 }
 
 func (p *Position) Make(move Move) {
@@ -80,22 +80,24 @@ func (p *Position) Make(move Move) {
 
 	//if its a capture we remove enemy piece from to
 	if flags&ISCAP != 0 {
-		clear(&(p.pieceBB[move.Capture()+(1-p.to_move)*6]), to)
-		clear(&(p.allBB[1-p.to_move]), to)
+		clear(&(p.pieceBB[move.Capture()+enemy*6]), to)
+		clear(&(p.allBB[enemy]), to)
 	}
 
 	if p.to_move == 1 {
 		p.full_move++
 	}
 	p.ep_square = 64
+
+	ep := uint8(int(to) - 8*(1-2*int(p.to_move)))
 	if piece == PAWN || flags&ISCAP != 0 {
 		if flags&DP != 0 {
-			p.ep_square = uint8(int(to) - 8*(1-2*int(p.to_move)))
+			p.ep_square = ep
 		}
 		if flags&EP != 0 {
-			clear(&(p.pieceBB[PAWN+(enemy)*6]), to-8*(1-2*p.to_move))
-			clear(&(p.allBB[enemy]), to-8*(1-2*p.to_move))
-			clear(&(p.occupant), to-8*(1-2*p.to_move))
+			clear(&(p.pieceBB[PAWN+enemy*6]), ep)
+			clear(&(p.allBB[enemy]), ep)
+			clear(&(p.occupant), ep)
 		}
 		if promo != NOPROMO {
 			clear(&(p.pieceBB[PAWN+p.to_move*6]), to)
@@ -124,24 +126,24 @@ func (p *Position) Make(move Move) {
 	if piece == KING {
 		p.castle_rights &= 0b1100 >> (2 * p.to_move)
 		p.kings[p.to_move] = to
-
+		homeRank := p.to_move * 7 * 8
 		if flags&KCASTLE != 0 {
-			clear(&(p.pieceBB[ROOK+p.to_move*6]), 7+p.to_move*7*8)
-			clear(&(p.allBB[p.to_move]), 7+p.to_move*7*8)
-			clear(&(p.occupant), 7+p.to_move*7*8)
+			clear(&(p.pieceBB[ROOK+p.to_move*6]), 7+homeRank)
+			clear(&(p.allBB[p.to_move]), 7+homeRank)
+			clear(&(p.occupant), 7+homeRank)
 
-			set(&(p.pieceBB[ROOK+p.to_move*6]), 5+p.to_move*7*8)
-			set(&(p.allBB[p.to_move]), 5+p.to_move*7*8)
-			set(&(p.occupant), 5+p.to_move*7*8)
+			set(&(p.pieceBB[ROOK+p.to_move*6]), 5+homeRank)
+			set(&(p.allBB[p.to_move]), 5+homeRank)
+			set(&(p.occupant), 5+homeRank)
 
 		} else if flags&QCASTLE != 0 {
-			clear(&(p.pieceBB[ROOK+p.to_move*6]), p.to_move*7*8)
-			clear(&(p.allBB[p.to_move]), p.to_move*7*8)
-			clear(&(p.occupant), p.to_move*7*8)
+			clear(&(p.pieceBB[ROOK+p.to_move*6]), homeRank)
+			clear(&(p.allBB[p.to_move]), homeRank)
+			clear(&(p.occupant), homeRank)
 
-			set(&(p.pieceBB[ROOK+p.to_move*6]), 3+p.to_move*7*8)
-			set(&(p.allBB[p.to_move]), 3+p.to_move*7*8)
-			set(&(p.occupant), 3+p.to_move*7*8)
+			set(&(p.pieceBB[ROOK+p.to_move*6]), 3+homeRank)
+			set(&(p.allBB[p.to_move]), 3+homeRank)
+			set(&(p.occupant), 3+homeRank)
 		}
 	}
 	p.to_move = enemy
@@ -186,23 +188,24 @@ func (p *Position) Unmake(move Move) {
 
 	if piece == KING {
 		p.kings[prev_color] = from
+		homeRank := prev_color * 56
 		if flags&KCASTLE != 0 {
-			set(&(p.pieceBB[ROOK+prev_color*6]), 7+prev_color*7*8)
-			set(&(p.allBB[prev_color]), 7+prev_color*7*8)
-			set(&(p.occupant), 7+prev_color*7*8)
+			set(&(p.pieceBB[ROOK+prev_color*6]), 7+homeRank)
+			set(&(p.allBB[prev_color]), 7+homeRank)
+			set(&(p.occupant), 7+homeRank)
 
-			clear(&(p.pieceBB[ROOK+prev_color*6]), 5+prev_color*7*8)
-			clear(&(p.allBB[prev_color]), 5+prev_color*7*8)
-			clear(&(p.occupant), 5+prev_color*7*8)
+			clear(&(p.pieceBB[ROOK+prev_color*6]), 5+homeRank)
+			clear(&(p.allBB[prev_color]), 5+homeRank)
+			clear(&(p.occupant), 5+homeRank)
 
 		} else if flags&QCASTLE != 0 {
-			set(&(p.pieceBB[ROOK+prev_color*6]), prev_color*7*8)
-			set(&(p.allBB[prev_color]), prev_color*7*8)
-			set(&(p.occupant), prev_color*7*8)
+			set(&(p.pieceBB[ROOK+prev_color*6]), homeRank)
+			set(&(p.allBB[prev_color]), homeRank)
+			set(&(p.occupant), homeRank)
 
-			clear(&(p.pieceBB[ROOK+prev_color*6]), 3+prev_color*7*8)
-			clear(&(p.allBB[prev_color]), 3+prev_color*7*8)
-			clear(&(p.occupant), 3+prev_color*7*8)
+			clear(&(p.pieceBB[ROOK+prev_color*6]), 3+homeRank)
+			clear(&(p.allBB[prev_color]), 3+homeRank)
+			clear(&(p.occupant), 3+homeRank)
 		}
 	}
 

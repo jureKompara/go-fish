@@ -29,6 +29,10 @@ var Uint8ToChar = [...]uint8{
 	KING:   'K',
 }
 
+func Start() Position {
+	return FromFen(starting_pos)
+}
+
 func FromFen(fen string) Position {
 	var split []string = strings.Split(fen, " ")
 

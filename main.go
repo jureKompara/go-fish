@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"runtime/pprof"
+	"time"
+
+	"github.com/fatih/color"
 )
 
 const starting_pos string = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -10,15 +14,15 @@ const starting_pos string = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 
 func main() {
 
 	GenerateAttackBoards()
-	//fancy := color.New(color.Bold, color.FgHiMagenta)
-	//var nodes uint64
-	//var pos Position = FromFen(starting_pos)
+	fancy := color.New(color.Bold, color.FgHiMagenta)
+	var nodes uint64
+	pos := FromFen(starting_pos)
 
 	f, _ := os.Create("cpu.out")
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 
-	/*	for i := 0; i <= 6; i++ {
+	for i := 0; i <= 7; i++ {
 		start := time.Now()
 		nodes = pos.perft(i)
 		elapsed := time.Since(start)
@@ -31,6 +35,6 @@ func main() {
 		fancy.Printf("N: %d\n", nodes)
 		fmt.Printf("N/s: %.2f MN/s\n", mnps)
 		fmt.Println("----------------------------------")
-	}*/
+	}
 	test(5)
 }
