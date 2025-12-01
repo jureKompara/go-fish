@@ -36,10 +36,10 @@ func (m Move) San() string {
 	from := m.From()
 	to := m.To()
 
-	r := from / 8
-	f := from % 8
-	tr := to / 8
-	tf := to % 8
+	r := from & 0b11111000
+	f := from & 0b00000111
+	tr := to & 0b11111000
+	tf := to & 0b00000111
 
 	return fmt.Sprintf("%c%d%c%d", f+'a', r+1, tf+'a', tr+1)
 }

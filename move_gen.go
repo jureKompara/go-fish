@@ -41,11 +41,9 @@ func (p *Position) GenKingMoves(sq, color uint8, mask uint64, moves *[]Move) {
 	for mask != 0 {
 		to := popLSB(&mask)
 		flags := uint8(0)
-		capPiece, isCap := p.WhatPieceAt(to, 1-color)
-		if isCap {
+		capPiece := p.WhatPieceAt(to, 1-color)
+		if capPiece != NOCAP {
 			flags |= ISCAP
-		} else {
-			capPiece = NOCAP
 		}
 		*moves = append(*moves, NewMove(sq, to, KING, NOPROMO, capPiece, flags))
 	}
@@ -98,7 +96,6 @@ func (p *Position) GenPawnMoves(sq, color uint8, mask uint64, moves *[]Move) {
 		flags := uint8(0)
 
 		var capPiece uint8 = NOCAP
-		var isCap bool
 
 		if diff := int(to) - int(sq); diff == 16 || diff == -16 {
 			flags |= DP
@@ -108,8 +105,8 @@ func (p *Position) GenPawnMoves(sq, color uint8, mask uint64, moves *[]Move) {
 			flags |= EP
 			capPiece = PAWN
 		} else { //if its not an ep we check if its a capture
-			capPiece, isCap = p.WhatPieceAt(to, 1-color)
-			if isCap {
+			capPiece = p.WhatPieceAt(to, 1-color)
+			if capPiece != NOCAP {
 				flags |= ISCAP
 			}
 		}
@@ -130,13 +127,13 @@ func (p *Position) pseudoSlider(sq, color uint8, deltas []int8) uint64 {
 	var sq2 int8
 	for _, d := range deltas {
 		sq2 = int8(sq)
-		prevF = int8(sq) & 0b111 //this is esentialy sq%8
+		prevF = int8(sq) & 7 //this is esentialy sq%8
 		for {
 			sq2 += d
 			if sq2 > 63 || sq2 < 0 {
 				break
 			}
-			newF := sq2 & 0b111
+			newF := sq2 & 7
 			df := newF - prevF
 			if df > 1 || df < -1 || Has(p.allBB[color], uint8(sq2)) {
 				break
@@ -162,11 +159,9 @@ func (p *Position) GenGenericMoves(sq, color, piece uint8, mask uint64, moves *[
 	for mask != 0 {
 		to := popLSB(&mask)
 		flags := uint8(0)
-		capPiece, isCap := p.WhatPieceAt(to, 1-color)
-		if isCap {
+		capPiece := p.WhatPieceAt(to, 1-color)
+		if capPiece != NOCAP {
 			flags |= ISCAP
-		} else {
-			capPiece = NOCAP
 		}
 		*moves = append(*moves, NewMove(sq, to, piece, NOPROMO, capPiece, flags))
 	}
