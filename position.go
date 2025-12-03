@@ -11,18 +11,20 @@ const (
 )
 
 type Position struct {
-	pieceBB       [12]uint64 //per piece per color bitboards
-	allBB         [2]uint64  //per color bitboards
-	occupant      uint64     //is there any piece here ass bitboard
-	to_move       int        //side to move 0=white 1=black
-	castle_rights uint8      //0b1111 4 bits denote the castling rights 0123-KQkq
-	ep_square     int        //denotes en passant square
-	full_move     int        //fullmove counter
-	half_move     int        //halfmove counter
-	kings         [2]int     //per color king position
-	moveStack     [512]Move  //stock of move structs
-	stateStack    [512]State //stack of state structs
-	ply           int        //the current ply so we can index into the stacks
+	pieceBB       [12]uint64     //per piece per color bitboards
+	allBB         [2]uint64      //per color bitboards
+	occupant      uint64         //is there any piece here bitboard
+	to_move       int            //side to move 0=white 1=black
+	castle_rights uint8          //0b1111 4 bits denote the castling rights 0123-KQkq
+	ep_square     int            //denotes en passant square
+	full_move     int            //fullmove counter
+	half_move     int            //halfmove counter
+	kings         [2]int         //per color king position
+	moveStack     [512]Move      //stack of move structs
+	stateStack    [512]State     //stack of state structs
+	ply           int            //the current ply so we can index into the stacks
+	movebuff      [512][256]Move //buffer for storing moves per ply
+
 }
 
 func (p *Position) Save() {
@@ -30,15 +32,13 @@ func (p *Position) Save() {
 }
 
 func (p *Position) IsAttacked(sq int, by int) bool {
-	if p.pseudoSlider(sq, 1-by, bishOff[:])&
-		(p.pieceBB[BISHOP+by*6]|p.pieceBB[QUEEN+by*6]) != 0 {
+	if p.MagicBishop(sq)&(p.pieceBB[BISHOP+6*by]|p.pieceBB[QUEEN+6*by]) != 0 {
 		return true
 	}
 	if knight[sq]&p.pieceBB[KNIGHT+by*6] != 0 {
 		return true
 	}
-	if p.pseudoSlider(sq, 1-by, rookOff[:])&
-		(p.pieceBB[ROOK+by*6]|p.pieceBB[QUEEN+by*6]) != 0 {
+	if p.MagicRook(sq)&(p.pieceBB[ROOK+6*by]|p.pieceBB[QUEEN+6*by]) != 0 {
 		return true
 	}
 	if pawn[1-by][sq]&p.pieceBB[PAWN+by*6] != 0 {
@@ -51,6 +51,9 @@ func (p *Position) IsAttacked(sq int, by int) bool {
 }
 
 func (p *Position) WhatPieceAt(sq int, color int) int {
+	if !Has(p.occupant, sq) {
+		return NOCAP
+	}
 	for piece := PAWN; piece <= KING; piece++ {
 		if Has(p.pieceBB[color*6+piece], sq) {
 			return piece
@@ -89,8 +92,11 @@ func (p *Position) Make(move Move) {
 	}
 	p.ep_square = 64
 
-	ep := to - 8*(1-2*p.to_move)
-	if piece == PAWN || flags&ISCAP != 0 {
+	if piece == PAWN {
+		//for both double pushes and ep captures the relevant squre
+		//is the one behind 'to' so we can use it for setting ep_square
+		//after a double push or clearing the pawn after an ep capture
+		ep := to - 8*(1-2*p.to_move)
 		if flags&DP != 0 {
 			p.ep_square = ep
 		}
@@ -104,6 +110,8 @@ func (p *Position) Make(move Move) {
 			set(&(p.pieceBB[promo+p.to_move*6]), to)
 		}
 
+		p.half_move = 0
+	} else if flags&ISCAP != 0 {
 		p.half_move = 0
 	} else {
 		p.half_move++

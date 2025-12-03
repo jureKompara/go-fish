@@ -1,19 +1,89 @@
 package main
 
-func GenMasks() uint {
+import "math/bits"
 
-	return 0
-}
+// movement offsets for sliders
+var bishOff = [4]int{7, 9, -7, -9}
+var rookOff = [4]int{1, 8, -1, -8}
+var queenOff = [8]int{7, 9, -7, -9, 1, 8, -1, -8}
+
+var bishopMagic = [64]uint64{17012709370506903680, 14255036331561329170,
+	16658890357802845336, 2857819918227750912,
+	8753045217836173600, 13096753873959258656,
+	4151199560846803456, 12979097358456586752,
+	2611953661777282048, 10734338788295447812,
+	17765016232926511104, 5105116121011325448,
+	8025418951741931620, 2256867531902156800,
+	6712057262183563328, 18131510804510810624,
+	13188369506810464257, 3358146349438084362,
+	13624514850282669568, 1701234862420402432,
+	3272148951733633536, 6513894465097204868,
+	16002452829160869954, 14648661549557229580,
+	3512253558208611328, 7921904312580833544,
+	13302656933199629312, 15140547793426333704,
+	7875106968237527040, 10346176818565914753,
+	11003984939020001536, 18303194584914626592,
+	4012724877387629612, 5006037065006055686,
+	13189919753713751044, 5507447148625003392,
+	6587649159619158024, 8174351086835073088,
+	2804198926541131905, 16384383587288361984,
+	13290408382528765960, 9920867647754871812,
+	5953477335519921152, 5250372669518153729,
+	12504965653687437328, 2842336514937979392,
+	8707720084372211216, 15390106163823509536,
+	6075075144437989892, 561555815660650496,
+	6598917513135292672, 11941332904174944258,
+	5862842367249352704, 9364426744018370560,
+	7696986023435191424, 13120410752484311072,
+	1535447099624439809, 4952552498834710592,
+	12515538589641607328, 1762877848464427008,
+	12887050540013519874, 17405005460385833364,
+	17895057552031420963, 8192619756415747588}
+
+var rookMagics = [64]uint64{36046938962935810, 594545519825526784,
+	324276766967431304, 4683753648277172224,
+	144124121675989504, 432349970867169281,
+	144116017140989956, 108091068276285568,
+	2594777091060826144, 281749856747788,
+	164100048879157314, 2882445049029724160,
+	9693013069856505984, 1164743462227283976,
+	1126054659949200, 153263194620559616,
+	9007751158054912, 12186740866544586752,
+	141287781044230, 1805944002479390736,
+	19145796108746769, 10493528419084534272,
+	41029375937810440, 145524761987154957,
+	1170938396344878112, 4629735603460636802,
+	288247979077272192, 9225641712323002400,
+	73183528438743168, 360851272335623240,
+	144141593539653761, 612529140331479121,
+	18014949615861801, 11245488406987292676,
+	5778118459372142656, 9223794867904186368,
+	140754676615168, 423329164952064,
+	1168298215426, 360587591436730468,
+	4539059154223106, 9024791981867010,
+	2310355422116061184, 9223389629175070848,
+	72061992218689664, 45599496050081794,
+	2533420819873796, 563504008527876,
+	36284965847296, 36063982465843776,
+	2317385754241663232, 4629718011275117184,
+	1155455355196014848, 2379591652202283136,
+	1136590324736, 7062774827539530240,
+	144255927192129857, 4644611994689795,
+	36064051192793602, 9516673502376628225,
+	585749437406515205, 9944229486637613569,
+	5836666285338398884, 4900483781237940354}
 
 func GenMaskBish(sq int) uint64 {
 	var out uint64
 	for _, d := range bishOff {
 		sq2 := sq + d
+		if sq2 < 0 {
+			continue
+		}
 		for !(sq2&7 == 7 || sq2>>3 == 7 || sq2&7 == 0 || sq2>>3 == 0) {
 			set(&out, sq2)
 			sq2 += d
 		}
-
 	}
 	return out
 }
@@ -37,3 +107,211 @@ func GenRookMask(sq int) uint64 {
 	}
 	return out
 }
+
+// This function inits stuff that is required for magics
+// that is the rook and bishop masks and the apropriate
+// attack bitboard for every square and relevant occupany possible
+func MagicInit() {
+	for i := range 64 {
+		maskR[i] = GenRookMask(i)
+		maskB[i] = GenMaskBish(i)
+	}
+
+	//The next two for loops generate all possible relevant occupancies
+	//for a square
+	for sq, bb := range maskR {
+		count := bits.OnesCount64(bb)
+		l := make([]int, 0, count)
+		for bb != 0 {
+			l = append(l, int(popLSB(&bb)))
+		}
+		for i := range 1 << count {
+			cock := uint64(i)
+			for cock != 0 {
+				occR[sq][i] |= 1 << l[popLSB(&cock)]
+			}
+		}
+	}
+	for sq, bb := range maskB {
+		count := bits.OnesCount64(bb)
+		l := make([]int, 0, count)
+		for bb != 0 {
+			l = append(l, int(popLSB(&bb)))
+		}
+		for i := range 1 << count {
+			cock := uint64(i)
+			for cock != 0 {
+				occB[sq][i] |= 1 << l[popLSB(&cock)]
+			}
+		}
+	}
+
+	//fils rookAttTable with the correct attacks
+	for sq := range 64 {
+		relBits := bits.OnesCount64(maskR[sq])
+		occCount := 1 << relBits
+		shift := 64 - relBits
+		rookShifts[sq] = shift
+
+		for i := range occCount {
+			occ := occR[sq][i]
+			idx := (occ * rookMagics[sq]) >> shift
+			rookAttTable[sq][idx] = SliderMommy(sq, occ, rookOff[:])
+		}
+	}
+
+	//fils bishopAttTable with the correct attacks
+	for sq := range 64 {
+		relBits := bits.OnesCount64(maskB[sq])
+		occCount := 1 << relBits
+		shift := 64 - relBits
+		bishopShifts[sq] = shift
+
+		for i := range occCount {
+			occ := occB[sq][i]
+			idx := (occ * bishopMagic[sq]) >> shift
+			bishopAttTable[sq][idx] = SliderMommy(sq, occ, bishOff[:])
+		}
+	}
+}
+
+func SliderMommy(sq int, occ uint64, deltas []int) uint64 {
+	var out uint64
+	var prevF int
+	for _, d := range deltas {
+		sq2 := sq
+		prevF = sq & 7 //this is esentialy sq%8
+		for {
+			sq2 += d
+			if sq2 > 63 || sq2 < 0 {
+				break
+			}
+			newF := sq2 & 7
+			df := newF - prevF
+			if df > 1 || df < -1 {
+				break
+			}
+
+			out |= 1 << sq2
+			prevF = newF
+
+			if Has(occ, sq2) {
+				break
+			}
+		}
+	}
+	return out
+}
+
+/*var maskR [64]uint64
+var occR [64][4096]uint64
+
+var maskB [64]uint64
+var occB [64][4096]uint64
+var rookAttTable [64][4096]uint64
+
+for i := range 64 {
+	maskR[i] = GenRookMask(i)
+	maskB[i] = GenMaskBish(i)
+}*/
+
+/*
+for sq, bb := range maskR {
+	count := bits.OnesCount64(bb)
+	l := make([]int, 0, count)
+	for bb != 0 {
+		l = append(l, int(popLSB(&bb)))
+	}
+	for i := range 1 << count {
+		cock := uint64(i)
+		for cock != 0 {
+			occR[sq][i] |= 1 << l[popLSB(&cock)]
+		}
+	}
+}
+
+for sq, bb := range maskB {
+	count := bits.OnesCount64(bb)
+	l := make([]int, 0, count)
+	for bb != 0 {
+		l = append(l, int(popLSB(&bb)))
+	}
+	for i := range 1 << count {
+		cock := uint64(i)
+		for cock != 0 {
+			occB[sq][i] |= 1 << l[popLSB(&cock)]
+		}
+	}
+}*/
+
+/*//fils rookAttTable with the correct attacks
+for sq := range 64 {
+	relBits := bits.OnesCount64(maskR[sq])
+	occCount := 1 << relBits
+	shift := uint(64 - relBits)
+
+	for i := 0; i < occCount; i++ {
+		occ := occB[sq][i]
+		idx := (occ * rookMagics[sq]) >> shift
+		rookAttTable[sq][idx] = SliderMommy(sq, occ, rookOff[:])
+	}
+}*/
+
+/*for sq := range 64 {
+	relBits := bits.OnesCount64(maskR[sq])
+	occCount := 1 << relBits
+	shift := uint(64 - relBits)
+
+	for i := range occCount {
+		occ := occB[sq][i]
+
+		// magic lookup (what you’ll use in the engine)
+		idx := (occ * rookMagics[sq]) >> shift
+		got := rookAttTable[sq][idx]
+
+		if !(got == SliderMommy(sq, occ, rookOff[:])) {
+			fmt.Println("FAILED")
+		}
+	}
+}
+fmt.Println("ALL GOOD")
+*/
+
+/*for sq := range 64 {
+	tries := 0
+	relCount := bits.OnesCount64(maskR[sq])
+	occCount := uint64(1) << relCount
+	shift := uint(64 - relCount)
+
+	attacks := make([]uint64, occCount)
+	for i := range occCount {
+		attacks[i] = SliderMommy(sq, occR[sq][i], rookOff[:])
+	}
+
+	for {
+		tries++
+		var rookAttTable [4096]uint64
+		magic := rand.Uint64() & rand.Uint64() & rand.Uint64()
+		if bits.OnesCount64((magic*maskR[sq])&0xFF00000000000000) < 6 {
+			continue
+		}
+		collision := false
+		var used [4096]bool
+		for ix := range occCount {
+			index := int((magic * occR[sq][ix]) >> shift)
+			if used[index] && rookAttTable[index] != attacks[ix] {
+				collision = true
+				break
+			}
+			used[index] = true
+			rookAttTable[index] = attacks[ix]
+		}
+		if !collision {
+			fmt.Printf("found magic for sq: %d\n", sq)
+			magicR[sq] = magic
+			break
+		}
+	}
+	fmt.Printf("sq:%d tries:%d\n", sq, tries)
+}
+fmt.Println(magicR)*/

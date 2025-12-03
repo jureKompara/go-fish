@@ -24,7 +24,7 @@ func popLSB(bb *uint64) int {
 }
 
 // prints a bitboard as a chessboard
-func pirntBB(bb uint64) {
+func printBB(bb uint64) {
 	for rank := 7; rank >= 0; rank-- {
 		for file := range 8 {
 			if Has(bb, rank*8+file) {

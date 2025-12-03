@@ -5,7 +5,35 @@ import (
 	"strings"
 )
 
-var charToint = [...]int{
+const starting_pos string = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+type TestCase struct {
+	FEN    string
+	result []uint64
+}
+
+var tests = []TestCase{
+	{FEN: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+		result: []uint64{1, 20, 42069, 8902, 197281, 4865609, 119060324, 3195901860, 84_998_978_956},
+	},
+	{FEN: "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+		result: []uint64{1, 48, 2039, 97862, 4085603, 193690690, 8031647685},
+	},
+	{FEN: "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+		result: []uint64{1, 14, 191, 2812, 43238, 674624, 11030083, 178633661, 3009794393},
+	},
+	{FEN: "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1",
+		result: []uint64{1, 6, 264, 9467, 422333, 15833292, 706045033},
+	},
+	{FEN: "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
+		result: []uint64{1, 44, 1486, 62379, 2103487, 89941194},
+	},
+	{FEN: "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
+		result: []uint64{1, 46, 2079, 89890, 3894594, 164075551, 6923051137, 287_188_994_746, 11_923_589_843_526},
+	},
+}
+
+var charToPiece = ['r' + 1]int{
 	'P': PAWN,
 	'N': KNIGHT,
 	'B': BISHOP,
@@ -20,7 +48,7 @@ var charToint = [...]int{
 	'k': KING,
 }
 
-var intToChar = [...]int{
+var pieceToChar = [6]int{
 	PAWN:   'P',
 	KNIGHT: 'N',
 	BISHOP: 'B',
@@ -34,14 +62,14 @@ func Start() Position {
 }
 
 func FromFen(fen string) Position {
-	var split []string = strings.Split(fen, " ")
+	split := strings.Split(fen, " ")
+	board := split[0]
+	clr := split[1]
+	cr := split[2]
+	ep := split[3]
+	fm := split[4]
+	hm := split[5]
 
-	var rank int = 7
-	var file int = 0
-
-	var c byte
-	var pieceType int
-	var square int
 	var color int
 
 	var pieceBB [12]uint64
@@ -50,16 +78,15 @@ func FromFen(fen string) Position {
 	var to_move int
 	var castle_rights uint8
 	var ep_square int = 64 //sentinel value
-	var full_move int
-	var half_move int
 	var kings [2]int
 	var moveStack [512]Move
 	var stateStack [512]State
 	var ply int
 
+	rank := 7
+	file := 0
 	//board
-	for i := range split[0] {
-		c = split[0][i]
+	for _, c := range board {
 
 		if c == '/' {
 			file = 0
@@ -77,8 +104,8 @@ func FromFen(fen string) Position {
 			color = 0
 		}
 
-		pieceType = charToint[c]
-		square = rank*8 + file
+		pieceType := charToPiece[c]
+		square := rank*8 + file
 
 		pieceBB[6*color+pieceType] |= (1 << square)
 		if pieceType == KING {
@@ -88,12 +115,12 @@ func FromFen(fen string) Position {
 	}
 
 	//to move
-	if split[1] == "b" {
+	if clr == "b" {
 		to_move = 1
 	}
 
 	//castle rights
-	for _, r := range split[2] {
+	for _, r := range cr {
 		switch r {
 		case 'K':
 			castle_rights |= 0b0001
@@ -106,16 +133,13 @@ func FromFen(fen string) Position {
 		}
 	}
 	//ep square
-	if split[3] != "-" {
+	if ep != "-" {
 		ep_square = int(8*(split[3][1]-'1') + split[3][0] - 'a')
 	}
-	var x int64
-	//full move
-	x, _ = strconv.ParseInt(split[4], 10, 16)
-	full_move = int(x)
-	//half move
-	x, _ = strconv.ParseInt(split[5], 10, 8)
-	half_move = int(x)
+
+	full_move, _ := strconv.ParseInt(fm, 10, 16)
+
+	half_move, _ := strconv.ParseInt(hm, 10, 8)
 
 	//derived bit boards
 	for i := range 6 {
@@ -124,22 +148,34 @@ func FromFen(fen string) Position {
 	}
 	occupant = allBB[0] | allBB[1]
 
-	return Position{pieceBB, allBB, occupant, to_move, castle_rights,
-		ep_square, full_move, half_move, kings, moveStack, stateStack, ply}
+	return Position{
+		pieceBB:       pieceBB,
+		allBB:         allBB,
+		occupant:      occupant,
+		to_move:       to_move,
+		castle_rights: castle_rights,
+		ep_square:     ep_square,
+		full_move:     int(full_move),
+		half_move:     int(half_move),
+		kings:         kings,
+		moveStack:     moveStack,
+		stateStack:    stateStack,
+		ply:           ply,
+	}
 }
 
-// exportFen converts in-memory state back into a FEN string.
-// TODO: when exporting mid make/unmake states dont make sense look into it
 func (p *Position) exportFen() string {
 	var sb strings.Builder
 	var count int
 
+	//we build up a board to easily turn it to a fen
 	var board [64]byte
 	for p, bb := range p.pieceBB {
 		for bb != 0 {
 			board[popLSB(&bb)] = byte(p + 1)
 		}
 	}
+
 	for rank := 7; rank >= 0; rank-- {
 		for file := range 8 {
 			sq := rank*8 + file
@@ -153,7 +189,7 @@ func (p *Position) exportFen() string {
 				sb.WriteByte(byte(count + '0'))
 				count = 0
 			}
-			sb.WriteByte(byte(intToChar[(c-1)%6]) + (c-1)/6*32)
+			sb.WriteByte(byte(pieceToChar[(c-1)%6]) + (c-1)/6*32)
 		}
 		if count > 0 {
 			sb.WriteByte(byte(count + '0'))

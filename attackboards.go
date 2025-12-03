@@ -1,12 +1,13 @@
 package main
 
-import "math"
-
+//this file contains the
+// NOTE:slider pieces are comented out in this file becouse magics makes them irrelevant
 // attack maskes per square for every piece type
+
+// var bishop [64]uint64
+// var rook [64]uint64
+// var queen [64]uint64
 var knight [64]uint64
-var bishop [64]uint64
-var rook [64]uint64
-var queen [64]uint64
 var king [64]uint64
 var pawn [2][64]uint64
 var pawnPush [2][64]uint64
@@ -26,7 +27,8 @@ func FileMasks() {
 	}
 }
 
-// getPawnBB returns diagonal attack targets for a pawn on `sq`; color=true for white.
+// getPawnBB returns diagonal attack targets for a pawn on `sq`; color=0 for white.
+// we clip the a an h files if the pawn is capturing to the right and left respectively
 func getPawnBB(sq, color int) uint64 {
 	bb := uint64(1) << sq
 	if color == 0 {
@@ -54,7 +56,7 @@ func getPawnPushBB(sq, color int) uint64 {
 }
 
 // getSliderBB walks rays in `deltas` until an edge is hit; returns attack set.
-func getSliderBB(sq int, deltas []int) uint64 {
+/*func getSliderBB(sq int, deltas []int) uint64 {
 	var out uint64
 	for _, d := range deltas {
 		sq2 := sq
@@ -71,6 +73,7 @@ func getSliderBB(sq int, deltas []int) uint64 {
 	}
 	return out
 }
+*/
 
 // getKingBB is like slider but stops after a single step in each direction.
 func getKingBB(sq int) uint64 {
@@ -78,7 +81,8 @@ func getKingBB(sq int) uint64 {
 	prevF := sq & 7
 	for _, d := range queenOff {
 		sq2 := sq + d
-		if sq2 > 63 || sq2 < 0 || math.Abs(float64(sq2&7-prevF)) > 1 {
+		newF := sq2 & 7
+		if sq2 > 63 || sq2 < 0 || newF-prevF > 1 || newF-prevF < -1 {
 			continue
 		}
 		out |= 1 << sq2
@@ -86,6 +90,10 @@ func getKingBB(sq int) uint64 {
 	return out
 }
 
+// Knight moves on the edge of the board wrap around
+// so we have to take out the files that they could wrap to.
+// This means taking out the a file for any move going one file to the right
+// and taking out both a and b files for moves going two files to the right etc.
 func getKnightBB(sq int) uint64 {
 	bb := uint64(1) << sq
 	return ((bb << 17) & ^a) |
@@ -100,15 +108,15 @@ func getKnightBB(sq int) uint64 {
 
 func GenerateAttackBoards() {
 	FileMasks()
-	for i := range 64 {
-		knight[i] = getKnightBB(i)
-		bishop[i] = getSliderBB(i, bishOff[:])
-		rook[i] = getSliderBB(i, rookOff[:])
-		queen[i] = getSliderBB(i, queenOff[:])
-		king[i] = getKingBB(i)
-		pawn[0][i] = getPawnBB(i, 0)
-		pawn[1][i] = getPawnBB(i, 1)
-		pawnPush[0][i] = getPawnPushBB(i, 0)
-		pawnPush[1][i] = getPawnPushBB(i, 1)
+	for sq := range 64 {
+		knight[sq] = getKnightBB(sq)
+		//bishop[i] = getSliderBB(i, bishOff[:])
+		//rook[i] = getSliderBB(i, rookOff[:])
+		//queen[i] = getSliderBB(i, queenOff[:])
+		king[sq] = getKingBB(sq)
+		pawn[0][sq] = getPawnBB(sq, 0)
+		pawn[1][sq] = getPawnBB(sq, 1)
+		pawnPush[0][sq] = getPawnPushBB(sq, 0)
+		pawnPush[1][sq] = getPawnPushBB(sq, 1)
 	}
 }
