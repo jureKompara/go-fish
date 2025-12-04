@@ -1,11 +1,10 @@
-package main
+package engine
 
 import "math/bits"
 
 // movement offsets for sliders
 var bishOff = [4]int{7, 9, -7, -9}
 var rookOff = [4]int{1, 8, -1, -8}
-var queenOff = [8]int{7, 9, -7, -9, 1, 8, -1, -8}
 
 var bishopMagic = [64]uint64{17012709370506903680, 14255036331561329170,
 	16658890357802845336, 2857819918227750912,
@@ -73,7 +72,17 @@ var rookMagics = [64]uint64{36046938962935810, 594545519825526784,
 	585749437406515205, 9944229486637613569,
 	5836666285338398884, 4900483781237940354}
 
-func GenMaskBish(sq int) uint64 {
+var maskR [64]uint64
+var occR [64][4096]uint64
+var bishopAttTable [64][4096]uint64
+
+var maskB [64]uint64
+var occB [64][4096]uint64
+var rookAttTable [64][4096]uint64
+var rookShifts [64]int
+var bishopShifts [64]int
+
+func genMaskBish(sq int) uint64 {
 	var out uint64
 	for _, d := range bishOff {
 		sq2 := sq + d
@@ -88,7 +97,7 @@ func GenMaskBish(sq int) uint64 {
 	return out
 }
 
-func GenRookMask(sq int) uint64 {
+func genRookMask(sq int) uint64 {
 	var out uint64
 	file := sq & 7
 	rank := sq >> 3
@@ -113,8 +122,8 @@ func GenRookMask(sq int) uint64 {
 // attack bitboard for every square and relevant occupany possible
 func MagicInit() {
 	for i := range 64 {
-		maskR[i] = GenRookMask(i)
-		maskB[i] = GenMaskBish(i)
+		maskR[i] = genRookMask(i)
+		maskB[i] = genMaskBish(i)
 	}
 
 	//The next two for loops generate all possible relevant occupancies
@@ -156,7 +165,7 @@ func MagicInit() {
 		for i := range occCount {
 			occ := occR[sq][i]
 			idx := (occ * rookMagics[sq]) >> shift
-			rookAttTable[sq][idx] = SliderMommy(sq, occ, rookOff[:])
+			rookAttTable[sq][idx] = sliderAttacks(sq, occ, rookOff[:])
 		}
 	}
 
@@ -170,12 +179,12 @@ func MagicInit() {
 		for i := range occCount {
 			occ := occB[sq][i]
 			idx := (occ * bishopMagic[sq]) >> shift
-			bishopAttTable[sq][idx] = SliderMommy(sq, occ, bishOff[:])
+			bishopAttTable[sq][idx] = sliderAttacks(sq, occ, bishOff[:])
 		}
 	}
 }
 
-func SliderMommy(sq int, occ uint64, deltas []int) uint64 {
+func sliderAttacks(sq int, occ uint64, deltas []int) uint64 {
 	var out uint64
 	var prevF int
 	for _, d := range deltas {
@@ -195,7 +204,7 @@ func SliderMommy(sq int, occ uint64, deltas []int) uint64 {
 			out |= 1 << sq2
 			prevF = newF
 
-			if Has(occ, sq2) {
+			if has(occ, sq2) {
 				break
 			}
 		}

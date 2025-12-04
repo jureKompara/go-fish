@@ -1,4 +1,4 @@
-package main
+package engine
 
 import (
 	"fmt"
@@ -6,18 +6,18 @@ import (
 	"github.com/fatih/color"
 )
 
-func test(maxDepth int) {
+func Test(maxDepth int) {
 	ok := color.New(color.Bold, color.FgGreen)
 	err := color.New(color.Bold, color.FgRed)
 
-	for _, test := range tests {
+	for _, test := range Tests {
 		fmt.Println(test.FEN)
 		pos := FromFen(test.FEN)
 		for d, res := range test.result {
 			if d > maxDepth {
 				break
 			}
-			nodes := pos.perft(d)
+			nodes := pos.Perft(d)
 			if nodes != res {
 				err.Printf("%d: Err-%d Expected: %d\n", d, nodes, res)
 			} else {
@@ -28,14 +28,14 @@ func test(maxDepth int) {
 	}
 }
 
-func (p *Position) perft(depth int) uint64 {
+func (p *Position) Perft(depth int) uint64 {
 	// base case depth==1 we dont go to depth 0
 	// we just look if the moves are legal and count them
 	if depth == 1 {
 		count := uint64(0)
 		for _, move := range p.pseudoAll() {
 			p.Make(move)
-			if !p.IsAttacked(p.kings[1-p.to_move], p.to_move) {
+			if !p.isAttacked(p.kings[1-p.toMove], p.toMove) {
 				count++
 			}
 			p.Unmake(move)
@@ -48,8 +48,8 @@ func (p *Position) perft(depth int) uint64 {
 	nodes := uint64(0)
 	for _, move := range p.pseudoAll() {
 		p.Make(move)
-		if !p.IsAttacked(p.kings[1-p.to_move], p.to_move) {
-			nodes += p.perft(depth - 1)
+		if !p.isAttacked(p.kings[1-p.toMove], p.toMove) {
+			nodes += p.Perft(depth - 1)
 		}
 		p.Unmake(move)
 	}
@@ -58,31 +58,31 @@ func (p *Position) perft(depth int) uint64 {
 
 // very usefull function for debuging
 // prints out the # of nodes after each of the first plys in the position
-func (p *Position) perftDivide(depth int) uint64 {
+func (p *Position) PerftDivide(depth int) uint64 {
 	if depth == 0 {
 		return 1
 	}
 	nodes := uint64(0)
 	for _, move := range p.pseudoAll() {
-		snapCR := p.castle_rights
-		snapEP := p.ep_square
-		snapHM := p.half_move
-		snapTM := p.to_move
-		snapFM := p.full_move
+		snapCR := p.castleRights
+		snapEP := p.epSquare
+		snapHM := p.halfMove
+		snapTM := p.toMove
+		snapFM := p.fullMove
 		snapAll := p.allBB
 		snapOcc := p.occupant
 		snapKings := p.kings
 		snapPieces := p.pieceBB
 		p.Make(move)
 		n := uint64(0)
-		if !p.IsAttacked(p.kings[1-p.to_move], p.to_move) {
-			n = p.perft(depth - 1)
+		if !p.isAttacked(p.kings[1-p.toMove], p.toMove) {
+			n = p.Perft(depth - 1)
 			fmt.Printf("%s: %d\n", move.San(), n)
 		}
 		nodes += n
 		p.Unmake(move)
-		if p.castle_rights != snapCR || p.ep_square != snapEP || p.half_move != snapHM ||
-			p.to_move != snapTM || p.full_move != snapFM ||
+		if p.castleRights != snapCR || p.epSquare != snapEP || p.halfMove != snapHM ||
+			p.toMove != snapTM || p.fullMove != snapFM ||
 			p.allBB != snapAll || p.occupant != snapOcc || p.kings != snapKings || p.pieceBB != snapPieces {
 			panic("state mismatch")
 		}

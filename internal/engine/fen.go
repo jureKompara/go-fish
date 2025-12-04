@@ -1,4 +1,4 @@
-package main
+package engine
 
 import (
 	"strconv"
@@ -12,7 +12,7 @@ type TestCase struct {
 	result []uint64
 }
 
-var tests = []TestCase{
+var Tests = []TestCase{
 	{FEN: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 		result: []uint64{1, 20, 42069, 8902, 197281, 4865609, 119060324, 3195901860, 84_998_978_956},
 	},
@@ -48,7 +48,7 @@ var charToPiece = ['r' + 1]int{
 	'k': KING,
 }
 
-var pieceToChar = [6]int{
+var _pieceToChar = [6]int{
 	PAWN:   'P',
 	KNIGHT: 'N',
 	BISHOP: 'B',
@@ -75,9 +75,10 @@ func FromFen(fen string) Position {
 	var pieceBB [12]uint64
 	var allBB [2]uint64
 	var occupant uint64
-	var to_move int
-	var castle_rights uint8
-	var ep_square int = 64 //sentinel value
+	var b [64]uint8
+	var toMove int
+	var castleRights uint8
+	var epSquare int = 64 //sentinel value
 	var kings [2]int
 	var moveStack [512]Move
 	var stateStack [512]State
@@ -94,6 +95,9 @@ func FromFen(fen string) Position {
 			continue
 		}
 		if '1' <= c && c <= '8' {
+			for i := range int(c - '0') {
+				b[rank*8+file+i] = uint8(NOCAP)
+			}
 			file += int(c) - '0'
 			continue
 		}
@@ -107,6 +111,8 @@ func FromFen(fen string) Position {
 		pieceType := charToPiece[c]
 		square := rank*8 + file
 
+		b[square] = uint8(pieceType)
+
 		pieceBB[6*color+pieceType] |= (1 << square)
 		if pieceType == KING {
 			kings[color] = square
@@ -116,25 +122,25 @@ func FromFen(fen string) Position {
 
 	//to move
 	if clr == "b" {
-		to_move = 1
+		toMove = 1
 	}
 
 	//castle rights
 	for _, r := range cr {
 		switch r {
 		case 'K':
-			castle_rights |= 0b0001
+			castleRights |= 0b0001
 		case 'Q':
-			castle_rights |= 0b0010
+			castleRights |= 0b0010
 		case 'k':
-			castle_rights |= 0b0100
+			castleRights |= 0b0100
 		case 'q':
-			castle_rights |= 0b1000
+			castleRights |= 0b1000
 		}
 	}
 	//ep square
 	if ep != "-" {
-		ep_square = int(8*(split[3][1]-'1') + split[3][0] - 'a')
+		epSquare = int(8*(split[3][1]-'1') + split[3][0] - 'a')
 	}
 
 	full_move, _ := strconv.ParseInt(fm, 10, 16)
@@ -149,18 +155,19 @@ func FromFen(fen string) Position {
 	occupant = allBB[0] | allBB[1]
 
 	return Position{
-		pieceBB:       pieceBB,
-		allBB:         allBB,
-		occupant:      occupant,
-		to_move:       to_move,
-		castle_rights: castle_rights,
-		ep_square:     ep_square,
-		full_move:     int(full_move),
-		half_move:     int(half_move),
-		kings:         kings,
-		moveStack:     moveStack,
-		stateStack:    stateStack,
-		ply:           ply,
+		pieceBB:      pieceBB,
+		allBB:        allBB,
+		occupant:     occupant,
+		Board:        b,
+		toMove:       toMove,
+		castleRights: castleRights,
+		epSquare:     epSquare,
+		fullMove:     int(full_move),
+		halfMove:     int(half_move),
+		kings:        kings,
+		moveStack:    moveStack,
+		stateStack:   stateStack,
+		ply:          ply,
 	}
 }
 
@@ -189,7 +196,7 @@ func (p *Position) exportFen() string {
 				sb.WriteByte(byte(count + '0'))
 				count = 0
 			}
-			sb.WriteByte(byte(pieceToChar[(c-1)%6]) + (c-1)/6*32)
+			sb.WriteByte(byte(_pieceToChar[(c-1)%6]) + (c-1)/6*32)
 		}
 		if count > 0 {
 			sb.WriteByte(byte(count + '0'))
@@ -200,40 +207,40 @@ func (p *Position) exportFen() string {
 		}
 	}
 
-	if p.to_move == 0 {
+	if p.toMove == 0 {
 		sb.WriteString(" w ")
 	} else {
 		sb.WriteString(" b ")
 	}
 
-	if p.castle_rights == 0 {
+	if p.castleRights == 0 {
 		sb.WriteString("-")
 	} else {
-		if p.castle_rights&0b0001 != 0 {
+		if p.castleRights&0b0001 != 0 {
 			sb.WriteByte('K')
 		}
-		if p.castle_rights&0b0010 != 0 {
+		if p.castleRights&0b0010 != 0 {
 			sb.WriteByte('Q')
 		}
-		if p.castle_rights&0b0100 != 0 {
+		if p.castleRights&0b0100 != 0 {
 			sb.WriteByte('k')
 		}
-		if p.castle_rights&0b1000 != 0 {
+		if p.castleRights&0b1000 != 0 {
 			sb.WriteByte('q')
 		}
 	}
-	if p.ep_square == 64 {
+	if p.epSquare == 64 {
 		sb.WriteString(" - ")
 	} else {
 		sb.WriteByte(' ')
-		sb.WriteByte(byte('a' + p.ep_square&7))
-		sb.WriteByte(byte('1' + p.ep_square>>3))
+		sb.WriteByte(byte('a' + p.epSquare&7))
+		sb.WriteByte(byte('1' + p.epSquare>>3))
 		sb.WriteByte(' ')
 	}
 	var buf [8]byte
-	b := strconv.AppendInt(buf[:0], int64(p.full_move), 10)
+	b := strconv.AppendInt(buf[:0], int64(p.fullMove), 10)
 	b = append(b, ' ')
-	b = strconv.AppendInt(b, int64(p.half_move), 10)
+	b = strconv.AppendInt(b, int64(p.halfMove), 10)
 	sb.Write(b)
 
 	return sb.String()

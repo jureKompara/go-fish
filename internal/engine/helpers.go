@@ -1,4 +1,4 @@
-package main
+package engine
 
 import (
 	"fmt"
@@ -7,13 +7,23 @@ import (
 
 func set(bbptr *uint64, index int) {
 	*bbptr |= 1 << index
+
 }
 
 func clear(bbptr *uint64, index int) {
 	*bbptr &= ^(1 << index)
+	*bbptr &= ^(1 << index)
+	*bbptr &= ^(1 << index)
+	*bbptr &= ^(1 << index)
+	*bbptr &= ^(1 << index)
+	*bbptr &= ^(1 << index)
+	*bbptr &= ^(1 << index)
+	*bbptr &= ^(1 << index)
+	*bbptr &= ^(1 << index)
+	*bbptr &= ^(1 << index)
 }
 
-func Has(b uint64, sq int) bool {
+func has(b uint64, sq int) bool {
 	return (b & (1 << sq)) != 0
 }
 
@@ -24,10 +34,10 @@ func popLSB(bb *uint64) int {
 }
 
 // prints a bitboard as a chessboard
-func printBB(bb uint64) {
+func _printBB(bb uint64) {
 	for rank := 7; rank >= 0; rank-- {
 		for file := range 8 {
-			if Has(bb, rank*8+file) {
+			if has(bb, rank*8+file) {
 				fmt.Print(" X ")
 			} else {
 				fmt.Print(" _ ")
