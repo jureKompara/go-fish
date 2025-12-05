@@ -33,7 +33,7 @@ var Tests = []TestCase{
 	},
 }
 
-var charToPiece = ['r' + 1]int{
+var CharToPiece = ['r' + 1]int{
 	'P': PAWN,
 	'N': KNIGHT,
 	'B': BISHOP,
@@ -48,16 +48,17 @@ var charToPiece = ['r' + 1]int{
 	'k': KING,
 }
 
-var _pieceToChar = [6]int{
+var _pieceToChar = [7]int{
 	PAWN:   'P',
 	KNIGHT: 'N',
 	BISHOP: 'B',
 	ROOK:   'R',
 	QUEEN:  'Q',
 	KING:   'K',
+	EMPTY:  0,
 }
 
-func Start() Position {
+func StartPos() Position {
 	return FromFen(starting_pos)
 }
 
@@ -96,7 +97,7 @@ func FromFen(fen string) Position {
 		}
 		if '1' <= c && c <= '8' {
 			for i := range int(c - '0') {
-				b[rank*8+file+i] = uint8(NOCAP)
+				b[rank*8+file+i] = uint8(EMPTY)
 			}
 			file += int(c) - '0'
 			continue
@@ -108,7 +109,7 @@ func FromFen(fen string) Position {
 			color = 0
 		}
 
-		pieceType := charToPiece[c]
+		pieceType := CharToPiece[c]
 		square := rank*8 + file
 
 		b[square] = uint8(pieceType)
@@ -167,7 +168,7 @@ func FromFen(fen string) Position {
 		kings:        kings,
 		moveStack:    moveStack,
 		stateStack:   stateStack,
-		ply:          ply,
+		Ply:          ply,
 	}
 }
 

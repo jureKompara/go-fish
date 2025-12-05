@@ -12,15 +12,6 @@ func set(bbptr *uint64, index int) {
 
 func clear(bbptr *uint64, index int) {
 	*bbptr &= ^(1 << index)
-	*bbptr &= ^(1 << index)
-	*bbptr &= ^(1 << index)
-	*bbptr &= ^(1 << index)
-	*bbptr &= ^(1 << index)
-	*bbptr &= ^(1 << index)
-	*bbptr &= ^(1 << index)
-	*bbptr &= ^(1 << index)
-	*bbptr &= ^(1 << index)
-	*bbptr &= ^(1 << index)
 }
 
 func has(b uint64, sq int) bool {

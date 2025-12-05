@@ -33,9 +33,9 @@ func (p *Position) Perft(depth int) uint64 {
 	// we just look if the moves are legal and count them
 	if depth == 1 {
 		count := uint64(0)
-		for _, move := range p.pseudoAll() {
+		for _, move := range p.GenMoves() {
 			p.Make(move)
-			if !p.isAttacked(p.kings[1-p.toMove], p.toMove) {
+			if !p.InCheck() {
 				count++
 			}
 			p.Unmake(move)
@@ -46,9 +46,9 @@ func (p *Position) Perft(depth int) uint64 {
 		return 1
 	}
 	nodes := uint64(0)
-	for _, move := range p.pseudoAll() {
+	for _, move := range p.GenMoves() {
 		p.Make(move)
-		if !p.isAttacked(p.kings[1-p.toMove], p.toMove) {
+		if !p.InCheck() {
 			nodes += p.Perft(depth - 1)
 		}
 		p.Unmake(move)
@@ -63,7 +63,7 @@ func (p *Position) PerftDivide(depth int) uint64 {
 		return 1
 	}
 	nodes := uint64(0)
-	for _, move := range p.pseudoAll() {
+	for _, move := range p.GenMoves() {
 		snapCR := p.castleRights
 		snapEP := p.epSquare
 		snapHM := p.halfMove
@@ -77,7 +77,7 @@ func (p *Position) PerftDivide(depth int) uint64 {
 		n := uint64(0)
 		if !p.isAttacked(p.kings[1-p.toMove], p.toMove) {
 			n = p.Perft(depth - 1)
-			fmt.Printf("%s: %d\n", move.San(), n)
+			fmt.Printf("%s: %d\n", move.Uci(), n)
 		}
 		nodes += n
 		p.Unmake(move)

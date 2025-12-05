@@ -8,13 +8,14 @@ const (
 	ROOK
 	QUEEN
 	KING
+	EMPTY
 )
 
 type Position struct {
 	pieceBB      [12]uint64     //per piece per color bitboards
 	allBB        [2]uint64      //per color bitboards
 	occupant     uint64         //is there any piece here bitboard
-	Board        [64]uint8      //keeps track of what piece is where
+	Board        [64]uint8      //keeps track of what piece is on Board[sq]
 	toMove       int            //side to move 0=white 1=black
 	castleRights uint8          //0b1111 4 bits denote the castling rights 0123-KQkq
 	epSquare     int            //denotes en passant square
@@ -23,12 +24,12 @@ type Position struct {
 	kings        [2]int         //per color king position
 	moveStack    [512]Move      //stack of move structs
 	stateStack   [512]State     //stack of state structs
-	ply          int            //the current ply so we can index into the stacks
-	movebuff     [512][256]Move //buffer for storing moves per ply
+	Ply          int            //the current Ply so we can index into the stacks
+	Movebuff     [512][256]Move //buffer for storing moves per Ply
 }
 
 func (p *Position) save() {
-	p.stateStack[p.ply] = State{p.castleRights, uint8(p.epSquare), uint8(p.halfMove)}
+	p.stateStack[p.Ply] = State{p.castleRights, uint8(p.epSquare), uint8(p.halfMove)}
 }
 
 func (p *Position) isAttacked(sq int, by int) bool {
@@ -50,8 +51,9 @@ func (p *Position) isAttacked(sq int, by int) bool {
 	return false
 }
 
-func (p *Position) whatPieceAt(sq int) int {
-	return int(p.Board[sq])
+func (p *Position) InCheck() bool {
+	//fmt.Println("king:", 1-p.toMove, "is attacked by", p.toMove)
+	return p.isAttacked(p.kings[1-p.toMove], p.toMove)
 }
 
 func (p *Position) Make(move Move) {
@@ -73,7 +75,7 @@ func (p *Position) Make(move Move) {
 	clear(&(p.pieceBB[piece+p.toMove*6]), fr)
 	clear(&(p.allBB[p.toMove]), fr)
 	clear(&(p.occupant), fr)
-	p.Board[fr] = uint8(NOCAP)
+	p.Board[fr] = uint8(EMPTY)
 
 	//if its a capture we remove enemy piece from to
 	if flags&ISCAP != 0 {
@@ -98,9 +100,9 @@ func (p *Position) Make(move Move) {
 			clear(&(p.pieceBB[PAWN+enemy*6]), ep)
 			clear(&(p.allBB[enemy]), ep)
 			clear(&(p.occupant), ep)
-			p.Board[ep] = uint8(NOCAP)
+			p.Board[ep] = uint8(EMPTY)
 		}
-		if promo != NOPROMO {
+		if promo != EMPTY {
 			clear(&(p.pieceBB[PAWN+p.toMove*6]), to)
 			set(&(p.pieceBB[promo+p.toMove*6]), to)
 			p.Board[to] = uint8(promo)
@@ -135,7 +137,7 @@ func (p *Position) Make(move Move) {
 			clear(&(p.pieceBB[ROOK+p.toMove*6]), 7+homeRank)
 			clear(&(p.allBB[p.toMove]), 7+homeRank)
 			clear(&(p.occupant), 7+homeRank)
-			p.Board[7+homeRank] = uint8(NOCAP)
+			p.Board[7+homeRank] = uint8(EMPTY)
 
 			set(&(p.pieceBB[ROOK+p.toMove*6]), 5+homeRank)
 			set(&(p.allBB[p.toMove]), 5+homeRank)
@@ -146,7 +148,7 @@ func (p *Position) Make(move Move) {
 			clear(&(p.pieceBB[ROOK+p.toMove*6]), homeRank)
 			clear(&(p.allBB[p.toMove]), homeRank)
 			clear(&(p.occupant), homeRank)
-			p.Board[homeRank] = uint8(NOCAP)
+			p.Board[homeRank] = uint8(EMPTY)
 
 			set(&(p.pieceBB[ROOK+p.toMove*6]), 3+homeRank)
 			set(&(p.allBB[p.toMove]), 3+homeRank)
@@ -155,11 +157,11 @@ func (p *Position) Make(move Move) {
 		}
 	}
 	p.toMove = enemy
-	p.ply++
+	p.Ply++
 }
 
 func (p *Position) Unmake(move Move) {
-	state := p.stateStack[p.ply-1]
+	state := p.stateStack[p.Ply-1]
 	from := move.From()
 	to := move.To()
 	piece := move.Piece()
@@ -178,9 +180,9 @@ func (p *Position) Unmake(move Move) {
 	clear(&(p.pieceBB[piece+prev_color*6]), to)
 	clear(&(p.allBB[prev_color]), to)
 	clear(&(p.occupant), to)
-	p.Board[to] = uint8(NOCAP)
+	p.Board[to] = uint8(EMPTY)
 
-	if promo != NOPROMO {
+	if promo != EMPTY {
 		clear(&(p.pieceBB[promo+prev_color*6]), to)
 		set(&(p.pieceBB[PAWN+prev_color*6]), from)
 	}
@@ -211,7 +213,7 @@ func (p *Position) Unmake(move Move) {
 			clear(&(p.pieceBB[ROOK+prev_color*6]), 5+homeRank)
 			clear(&(p.allBB[prev_color]), 5+homeRank)
 			clear(&(p.occupant), 5+homeRank)
-			p.Board[5+homeRank] = uint8(NOCAP)
+			p.Board[5+homeRank] = uint8(EMPTY)
 
 		} else if flags&QCASTLE != 0 {
 			set(&(p.pieceBB[ROOK+prev_color*6]), homeRank)
@@ -222,7 +224,7 @@ func (p *Position) Unmake(move Move) {
 			clear(&(p.pieceBB[ROOK+prev_color*6]), 3+homeRank)
 			clear(&(p.allBB[prev_color]), 3+homeRank)
 			clear(&(p.occupant), 3+homeRank)
-			p.Board[3+homeRank] = uint8(NOCAP)
+			p.Board[3+homeRank] = uint8(EMPTY)
 		}
 	}
 
@@ -235,5 +237,5 @@ func (p *Position) Unmake(move Move) {
 		p.fullMove--
 	}
 	p.toMove = prev_color
-	p.ply--
+	p.Ply--
 }
