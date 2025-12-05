@@ -156,11 +156,11 @@ func FromFen(fen string) Position {
 	occupant = allBB[0] | allBB[1]
 
 	return Position{
-		pieceBB:      pieceBB,
+		PieceBB:      pieceBB,
 		allBB:        allBB,
 		occupant:     occupant,
 		Board:        b,
-		toMove:       toMove,
+		ToMove:       toMove,
 		castleRights: castleRights,
 		epSquare:     epSquare,
 		fullMove:     int(full_move),
@@ -178,9 +178,9 @@ func (p *Position) exportFen() string {
 
 	//we build up a board to easily turn it to a fen
 	var board [64]byte
-	for p, bb := range p.pieceBB {
+	for p, bb := range p.PieceBB {
 		for bb != 0 {
-			board[popLSB(&bb)] = byte(p + 1)
+			board[PopLSB(&bb)] = byte(p + 1)
 		}
 	}
 
@@ -208,7 +208,7 @@ func (p *Position) exportFen() string {
 		}
 	}
 
-	if p.toMove == 0 {
+	if p.ToMove == 0 {
 		sb.WriteString(" w ")
 	} else {
 		sb.WriteString(" b ")

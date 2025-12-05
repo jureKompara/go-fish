@@ -132,12 +132,12 @@ func MagicInit() {
 		count := bits.OnesCount64(bb)
 		l := make([]int, 0, count)
 		for bb != 0 {
-			l = append(l, int(popLSB(&bb)))
+			l = append(l, int(PopLSB(&bb)))
 		}
 		for i := range 1 << count {
 			cock := uint64(i)
 			for cock != 0 {
-				occR[sq][i] |= 1 << l[popLSB(&cock)]
+				occR[sq][i] |= 1 << l[PopLSB(&cock)]
 			}
 		}
 	}
@@ -145,12 +145,12 @@ func MagicInit() {
 		count := bits.OnesCount64(bb)
 		l := make([]int, 0, count)
 		for bb != 0 {
-			l = append(l, int(popLSB(&bb)))
+			l = append(l, int(PopLSB(&bb)))
 		}
 		for i := range 1 << count {
 			cock := uint64(i)
 			for cock != 0 {
-				occB[sq][i] |= 1 << l[popLSB(&cock)]
+				occB[sq][i] |= 1 << l[PopLSB(&cock)]
 			}
 		}
 	}

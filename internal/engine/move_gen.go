@@ -3,12 +3,12 @@ package engine
 // returns all pseudo legal moves in the position
 func (p *Position) GenMoves() []Move {
 	moves := p.Movebuff[p.Ply][:0]
-	color := p.toMove
+	color := p.ToMove
 
 	for piece := PAWN; piece <= KING; piece++ {
-		bb := p.pieceBB[6*p.toMove+piece]
+		bb := p.PieceBB[6*p.ToMove+piece]
 		for bb != 0 {
-			sq := popLSB(&bb)
+			sq := PopLSB(&bb)
 			switch piece {
 			case PAWN:
 				p.genPawnMoves(sq, p.pseudoPawn(sq, color), &moves)
@@ -30,7 +30,7 @@ func (p *Position) GenMoves() []Move {
 
 func (p *Position) genKingMoves(sq int, color int, mask uint64, moves *[]Move) {
 	for mask != 0 {
-		to := popLSB(&mask)
+		to := PopLSB(&mask)
 		flags := uint8(0)
 		capPiece := int(p.Board[to])
 		if capPiece != EMPTY {
@@ -73,7 +73,7 @@ func (p *Position) pseudoPawn(sq, color int) uint64 {
 
 func (p *Position) genPawnMoves(sq int, mask uint64, moves *[]Move) {
 	for mask != 0 {
-		to := popLSB(&mask)
+		to := PopLSB(&mask)
 		flags := uint8(0)
 
 		capPiece := EMPTY
@@ -116,7 +116,7 @@ func (p *Position) magicBishop(sq int) uint64 {
 // pawns and kings have promotions and castling so they get their own generators
 func (p *Position) genGenericMoves(sq, piece int, mask uint64, moves *[]Move) {
 	for mask != 0 {
-		to := popLSB(&mask)
+		to := PopLSB(&mask)
 		flags := uint8(0)
 		capPiece := int(p.Board[to])
 		if capPiece != EMPTY {

@@ -18,7 +18,7 @@ func has(b uint64, sq int) bool {
 	return (b & (1 << sq)) != 0
 }
 
-func popLSB(bb *uint64) int {
+func PopLSB(bb *uint64) int {
 	lsb_ix := bits.TrailingZeros64(*bb)
 	*bb &= *bb - 1
 	return lsb_ix

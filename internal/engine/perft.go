@@ -67,23 +67,23 @@ func (p *Position) PerftDivide(depth int) uint64 {
 		snapCR := p.castleRights
 		snapEP := p.epSquare
 		snapHM := p.halfMove
-		snapTM := p.toMove
+		snapTM := p.ToMove
 		snapFM := p.fullMove
 		snapAll := p.allBB
 		snapOcc := p.occupant
 		snapKings := p.kings
-		snapPieces := p.pieceBB
+		snapPieces := p.PieceBB
 		p.Make(move)
 		n := uint64(0)
-		if !p.isAttacked(p.kings[1-p.toMove], p.toMove) {
+		if !p.isAttacked(p.kings[1-p.ToMove], p.ToMove) {
 			n = p.Perft(depth - 1)
 			fmt.Printf("%s: %d\n", move.Uci(), n)
 		}
 		nodes += n
 		p.Unmake(move)
 		if p.castleRights != snapCR || p.epSquare != snapEP || p.halfMove != snapHM ||
-			p.toMove != snapTM || p.fullMove != snapFM ||
-			p.allBB != snapAll || p.occupant != snapOcc || p.kings != snapKings || p.pieceBB != snapPieces {
+			p.ToMove != snapTM || p.fullMove != snapFM ||
+			p.allBB != snapAll || p.occupant != snapOcc || p.kings != snapKings || p.PieceBB != snapPieces {
 			panic("state mismatch")
 		}
 	}
