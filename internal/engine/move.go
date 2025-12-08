@@ -22,12 +22,16 @@ func NewMove(from, to, piece, promo, capture int, flags uint8) Move {
 }
 
 // geters for packed uint32 Move
-func (m Move) From() int    { return int(m & 0x3F) }
-func (m Move) To() int      { return int((m >> 6) & 0x3F) }
-func (m Move) Piece() int   { return int((m >> 12) & 0x7) }
-func (m Move) Promo() int   { return int((m >> 15) & 0x7) }
-func (m Move) Capture() int { return int((m >> 18) & 0x7) }
-func (m Move) Flags() uint8 { return uint8((m >> 21) & 0x1F) }
+func (m Move) From() int       { return int(m & 0x3F) }
+func (m Move) To() int         { return int((m >> 6) & 0x3F) }
+func (m Move) Piece() int      { return int((m >> 12) & 0x7) }
+func (m Move) Promo() int      { return int((m >> 15) & 0x7) }
+func (m Move) Capture() int    { return int((m >> 18) & 0x7) }
+func (m Move) Flags() uint8    { return uint8((m >> 21) & 0x1F) }
+func (m Move) IsCapture() bool { return m.Flags()&ISCAP != 0 }
+func (m Move) IsEP() bool      { return m.Flags()&EP != 0 }
+func (m Move) IsDP() bool      { return m.Flags()&DP != 0 }
+func (m Move) IsCastle() bool  { return m.Flags()&(QCASTLE|KCASTLE) != 0 }
 
 // converts a move to UCI notation (e4e5 c7c8q)
 func (m Move) Uci() string {

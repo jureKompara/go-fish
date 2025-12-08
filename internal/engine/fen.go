@@ -12,24 +12,25 @@ type TestCase struct {
 	result []uint64
 }
 
+// fens for perft from the chess programming wiki
 var Tests = []TestCase{
-	{FEN: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-		result: []uint64{1, 20, 42069, 8902, 197281, 4865609, 119060324, 3195901860, 84_998_978_956},
+	{FEN: starting_pos,
+		result: []uint64{1, 20, 400, 8_902, 197_281, 4_865_609, 119_060_324, 3_195_901_860, 84_998_978_956},
 	},
 	{FEN: "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
-		result: []uint64{1, 48, 2039, 97862, 4085603, 193690690, 8031647685},
+		result: []uint64{1, 48, 2_039, 97_862, 4_085_603, 193_690_690, 8_031_647_685},
 	},
 	{FEN: "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
-		result: []uint64{1, 14, 191, 2812, 43238, 674624, 11030083, 178633661, 3009794393},
+		result: []uint64{1, 14, 191, 2_812, 43_238, 674_624, 11_030_083, 178_633_661, 3_009_794_393},
 	},
 	{FEN: "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1",
-		result: []uint64{1, 6, 264, 9467, 422333, 15833292, 706045033},
+		result: []uint64{1, 6, 264, 9_467, 422_333, 15_833_292, 706_045_033},
 	},
 	{FEN: "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
-		result: []uint64{1, 44, 1486, 62379, 2103487, 89941194},
+		result: []uint64{1, 44, 1_486, 62_379, 2_103_487, 89_941_194},
 	},
 	{FEN: "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
-		result: []uint64{1, 46, 2079, 89890, 3894594, 164075551, 6923051137, 287_188_994_746, 11_923_589_843_526},
+		result: []uint64{1, 46, 2_079, 89_890, 3_894_594, 164_075_551, 6_923_051_137, 287_188_994_746, 11_923_589_843_526},
 	},
 }
 
@@ -157,8 +158,8 @@ func FromFen(fen string) Position {
 
 	return Position{
 		PieceBB:      pieceBB,
-		allBB:        allBB,
-		occupant:     occupant,
+		ColorBB:      allBB,
+		Occupancy:    occupant,
 		Board:        b,
 		ToMove:       toMove,
 		castleRights: castleRights,

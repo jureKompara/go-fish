@@ -16,5 +16,5 @@ func Material(p *engine.Position) int {
 			score += bits.OnesCount64(p.PieceBB[color*6+piece]) * points[piece] * (-2*color + 1)
 		}
 	}
-	return score
+	return score * (-2*p.ToMove + 1)
 }

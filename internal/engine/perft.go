@@ -35,7 +35,7 @@ func (p *Position) Perft(depth int) uint64 {
 		count := uint64(0)
 		for _, move := range p.GenMoves() {
 			p.Make(move)
-			if !p.InCheck() {
+			if !p.InCheck(1 - p.ToMove) {
 				count++
 			}
 			p.Unmake(move)
@@ -48,7 +48,7 @@ func (p *Position) Perft(depth int) uint64 {
 	nodes := uint64(0)
 	for _, move := range p.GenMoves() {
 		p.Make(move)
-		if !p.InCheck() {
+		if !p.InCheck(1 - p.ToMove) {
 			nodes += p.Perft(depth - 1)
 		}
 		p.Unmake(move)
@@ -69,13 +69,13 @@ func (p *Position) PerftDivide(depth int) uint64 {
 		snapHM := p.halfMove
 		snapTM := p.ToMove
 		snapFM := p.fullMove
-		snapAll := p.allBB
-		snapOcc := p.occupant
+		snapAll := p.ColorBB
+		snapOcc := p.Occupancy
 		snapKings := p.kings
 		snapPieces := p.PieceBB
 		p.Make(move)
 		n := uint64(0)
-		if !p.isAttacked(p.kings[1-p.ToMove], p.ToMove) {
+		if !p.isAttacked(p.kings[p.ToMove^1], p.ToMove) {
 			n = p.Perft(depth - 1)
 			fmt.Printf("%s: %d\n", move.Uci(), n)
 		}
@@ -83,7 +83,7 @@ func (p *Position) PerftDivide(depth int) uint64 {
 		p.Unmake(move)
 		if p.castleRights != snapCR || p.epSquare != snapEP || p.halfMove != snapHM ||
 			p.ToMove != snapTM || p.fullMove != snapFM ||
-			p.allBB != snapAll || p.occupant != snapOcc || p.kings != snapKings || p.PieceBB != snapPieces {
+			p.ColorBB != snapAll || p.Occupancy != snapOcc || p.kings != snapKings || p.PieceBB != snapPieces {
 			panic("state mismatch")
 		}
 	}

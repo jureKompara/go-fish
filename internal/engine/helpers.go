@@ -25,9 +25,12 @@ func PopLSB(bb *uint64) int {
 }
 
 // prints a bitboard as a chessboard
-func _printBB(bb uint64) {
+func PrintBB(bb uint64, sq int) {
 	for rank := 7; rank >= 0; rank-- {
 		for file := range 8 {
+			if sq == rank*8+file {
+				fmt.Print(" 0 ")
+			}
 			if has(bb, rank*8+file) {
 				fmt.Print(" X ")
 			} else {
