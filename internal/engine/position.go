@@ -38,13 +38,13 @@ func (p *Position) save() {
 }
 
 func (p *Position) isAttacked(sq int, by int) bool {
-	if p.magicBishop(sq)&(p.PieceBB[BISHOP+6*by]|p.PieceBB[QUEEN+6*by]) != 0 {
+	if p.pseudoBishop(sq)&(p.PieceBB[BISHOP+6*by]|p.PieceBB[QUEEN+6*by]) != 0 {
 		return true
 	}
 	if knight[sq]&p.PieceBB[KNIGHT+by*6] != 0 {
 		return true
 	}
-	if p.magicRook(sq)&(p.PieceBB[ROOK+6*by]|p.PieceBB[QUEEN+6*by]) != 0 {
+	if p.pseudoRook(sq)&(p.PieceBB[ROOK+6*by]|p.PieceBB[QUEEN+6*by]) != 0 {
 		return true
 	}
 	if pawn[by^1][sq]&p.PieceBB[PAWN+by*6] != 0 {
