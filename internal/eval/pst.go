@@ -10,10 +10,10 @@ func Pst(p *engine.Position) int {
 		sign := -2*color + 1
 		for piece := engine.PAWN; piece <= engine.KING; piece++ {
 			material := points[piece]
-			bb := p.PieceBB[piece+color*6]
+			bb := p.PieceBB[color][piece]
 			for bb != 0 {
 				sq := engine.PopLSB(&bb)
-				score += sign * (material + pst[piece][sq^56*(1-color)])
+				score += sign * (material + pst[piece][sq^56*(color^1)])
 			}
 		}
 	}

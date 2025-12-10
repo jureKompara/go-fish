@@ -1,6 +1,9 @@
 package engine
 
-import "math/bits"
+import (
+	"math/bits"
+	"math/rand/v2"
+)
 
 // movement offsets for sliders
 var bishOff = [4]int{7, 9, -7, -9}
@@ -82,7 +85,7 @@ var rookAttTable [64][4096]uint64
 var rookShifts [64]int
 var bishopShifts [64]int
 
-func genMaskBish(sq int) uint64 {
+func genBishopMask(sq int) uint64 {
 	var out uint64
 	for _, d := range bishOff {
 		sq2 := sq + d
@@ -120,10 +123,11 @@ func genRookMask(sq int) uint64 {
 // This function inits stuff that is required for magics
 // that is the rook and bishop masks and the apropriate
 // attack bitboard for every square and relevant occupany possible
-func MagicInit() {
+// also generates random zobrist keys
+func Init() {
 	for i := range 64 {
 		maskR[i] = genRookMask(i)
-		maskB[i] = genMaskBish(i)
+		maskB[i] = genBishopMask(i)
 	}
 
 	//The next two for loops generate all possible relevant occupancies
@@ -181,6 +185,22 @@ func MagicInit() {
 			idx := (occ * bishopMagic[sq]) >> shift
 			bishopAttTable[sq][idx] = sliderAttacks(sq, occ, bishOff[:])
 		}
+	}
+	//zobrsit numbers init
+	for color := range 2 {
+		for piece := PAWN; piece <= KING; piece++ {
+			for sq := range 64 {
+				zobristPiece[color][piece][sq] = rand.Uint64()
+			}
+		}
+	}
+	zobristSide = rand.Uint64()
+
+	for i := range 16 {
+		zobristCastle[i] = rand.Uint64()
+	}
+	for i := range 8 {
+		zobristEP[i] = rand.Uint64()
 	}
 }
 

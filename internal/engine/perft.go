@@ -40,7 +40,7 @@ func (p *Position) Perft(depth int) uint64 {
 		count := uint64(0)
 		for _, move := range moves {
 			p.Make(move)
-			if !p.InCheck(1 - p.ToMove) {
+			if !p.InCheck(p.ToMove ^ 1) {
 				count++
 			}
 			p.Unmake(move)
@@ -50,7 +50,7 @@ func (p *Position) Perft(depth int) uint64 {
 	nodes := uint64(0)
 	for _, move := range moves {
 		p.Make(move)
-		if !p.InCheck(1 - p.ToMove) {
+		if !p.InCheck(p.ToMove ^ 1) {
 			nodes += p.Perft(depth - 1)
 		}
 		p.Unmake(move)
@@ -85,12 +85,17 @@ func (p *Position) PerftDivide(depth int) uint64 {
 		}
 		nodes += n
 		p.Unmake(move)
-		if p.castleRights != snapCR || p.epSquare != snapEP || p.halfMove != snapHM ||
-			p.ToMove != snapTM || p.fullMove != snapFM ||
-			p.ColorBB != snapAll || p.Occupancy != snapOcc || p.kings != snapKings || p.PieceBB != snapPieces {
+		if p.castleRights != snapCR ||
+			p.epSquare != snapEP ||
+			p.halfMove != snapHM ||
+			p.ToMove != snapTM ||
+			p.fullMove != snapFM ||
+			p.ColorBB != snapAll ||
+			p.Occupancy != snapOcc ||
+			p.kings != snapKings ||
+			p.PieceBB != snapPieces {
 			panic("state mismatch")
 		}
 	}
-	fmt.Printf("TOTAL NODES: %d", nodes)
 	return nodes
 }

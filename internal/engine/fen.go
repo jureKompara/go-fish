@@ -32,6 +32,9 @@ var Tests = []TestCase{
 	{FEN: "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
 		result: []uint64{1, 46, 2_079, 89_890, 3_894_594, 164_075_551, 6_923_051_137, 287_188_994_746, 11_923_589_843_526},
 	},
+	{FEN: "r1b1k2r/ppp2qp1/2n1p2p/3pNpR1/3P4/2P3P1/PPQNP1P1/3K1B2 b kq - 1 14",
+		result: []uint64{1, 31, 1073, 31872, 1077293, 31609174, 1059148863},
+	},
 }
 
 var CharToPiece = ['r' + 1]int{
@@ -74,7 +77,7 @@ func FromFen(fen string) Position {
 
 	var color int
 
-	var pieceBB [12]uint64
+	var pieceBB [2][6]uint64
 	var allBB [2]uint64
 	var occupant uint64
 	var b [64]uint8
@@ -82,9 +85,6 @@ func FromFen(fen string) Position {
 	var castleRights uint8
 	var epSquare int = 64 //sentinel value
 	var kings [2]int
-	var moveStack [512]Move
-	var stateStack [512]State
-	var ply int
 
 	rank := 7
 	file := 0
@@ -115,7 +115,7 @@ func FromFen(fen string) Position {
 
 		b[square] = uint8(pieceType)
 
-		pieceBB[6*color+pieceType] |= (1 << square)
+		pieceBB[color][pieceType] |= (1 << square)
 		if pieceType == KING {
 			kings[color] = square
 		}
@@ -150,13 +150,13 @@ func FromFen(fen string) Position {
 	half_move, _ := strconv.ParseInt(hm, 10, 8)
 
 	//derived bit boards
-	for i := range 6 {
-		allBB[0] |= pieceBB[i]
-		allBB[1] |= pieceBB[i+6]
+	for piece := PAWN; piece <= KING; piece++ {
+		allBB[WHITE] |= pieceBB[WHITE][piece]
+		allBB[BLACK] |= pieceBB[BLACK][piece]
 	}
-	occupant = allBB[0] | allBB[1]
+	occupant = allBB[WHITE] | allBB[BLACK]
 
-	return Position{
+	var pos = Position{
 		PieceBB:      pieceBB,
 		ColorBB:      allBB,
 		Occupancy:    occupant,
@@ -167,12 +167,12 @@ func FromFen(fen string) Position {
 		fullMove:     int(full_move),
 		halfMove:     int(half_move),
 		kings:        kings,
-		moveStack:    moveStack,
-		stateStack:   stateStack,
-		Ply:          ply,
 	}
+	pos.GenerateZobrist()
+	return pos
 }
 
+/*
 func (p *Position) exportFen() string {
 	var sb strings.Builder
 	var count int
@@ -247,3 +247,4 @@ func (p *Position) exportFen() string {
 
 	return sb.String()
 }
+*/

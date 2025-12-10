@@ -7,7 +7,7 @@ func (p *Position) GenMoves(moves *[]Move) {
 	color := p.ToMove
 
 	for piece := PAWN; piece <= KING; piece++ {
-		bb := p.PieceBB[6*p.ToMove+piece]
+		bb := p.PieceBB[p.ToMove][piece]
 		for bb != 0 {
 			sq := PopLSB(&bb)
 			switch piece {
@@ -33,7 +33,7 @@ func (p *Position) GenTactics(moves *[]Move) {
 	them := 1 - us
 
 	for piece := PAWN; piece <= KING; piece++ {
-		bb := p.PieceBB[6*p.ToMove+piece]
+		bb := p.PieceBB[p.ToMove][piece]
 		for bb != 0 {
 			sq := PopLSB(&bb)
 			switch piece {
@@ -96,15 +96,15 @@ func (p *Position) pseudoPawn(sq int) uint64 {
 	front := sq + 8 - 16*us
 	//if the front square isn't empty
 	if has(p.Occupancy, front) {
-		return pawn[us][sq] & (p.ColorBB[1-us] | 1<<p.epSquare)
+		return pawn[us][sq] & (p.ColorBB[us^1] | 1<<p.epSquare)
 	}
-	return (pawnPush[us][sq] & ^p.Occupancy) | pawn[us][sq]&(p.ColorBB[1-us]|1<<p.epSquare)
+	return (pawnPush[us][sq] & ^p.Occupancy) | pawn[us][sq]&(p.ColorBB[us^1]|1<<p.epSquare)
 }
 
 // returns a bitboard with only pawn captures
 func (p *Position) pseudoPawnCaptures(sq int) uint64 {
 	us := p.ToMove
-	return pawn[us][sq] & (p.ColorBB[1-us] | 1<<p.epSquare)
+	return pawn[us][sq] & (p.ColorBB[us^1] | 1<<p.epSquare)
 }
 
 // returns a bitboard with all posible pawn promotions
@@ -174,10 +174,9 @@ func (p *Position) genPawnCaptures(sq int, mask uint64, moves *[]Move) {
 func (p *Position) genPromotionPushes(sq int, mask uint64, moves *[]Move) {
 	for mask != 0 {
 		to := PopLSB(&mask)
-		flags := uint8(0)
 
 		for p := KNIGHT; p <= QUEEN; p++ {
-			*moves = append(*moves, NewMove(sq, to, PAWN, p, EMPTY, flags))
+			*moves = append(*moves, NewMove(sq, to, PAWN, p, EMPTY, uint8(0)))
 		}
 	}
 }
@@ -212,6 +211,9 @@ func (p *Position) genGenericCaptures(sq, piece int, mask uint64, moves *[]Move)
 	for mask != 0 {
 		to := PopLSB(&mask)
 		capPiece := int(p.Board[to])
+		if capPiece == EMPTY {
+			panic("OH NOOOOOOOOOOOOOOOOOOOOOOO!!!")
+		}
 		*moves = append(*moves, NewMove(sq, to, piece, EMPTY, capPiece, ISCAP))
 	}
 }
