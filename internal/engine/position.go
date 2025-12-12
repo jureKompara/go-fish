@@ -39,15 +39,20 @@ var zobristSide uint64
 var zobristCastle [16]uint64
 var zobristEP [8]uint64
 
-func (p *Position) save() {
-	p.stateStack[p.Ply] = State{p.castleRights, uint8(p.epSquare), uint8(p.halfMove)}
+func (p *Position) save(capture uint8) {
+	p.stateStack[p.Ply] = State{
+		capture,
+		p.castleRights,
+		uint8(p.epSquare),
+		uint8(p.halfMove),
+	}
 }
 
 func (p *Position) isAttacked(sq int, by int) bool {
-	if p.pseudoBishop(sq)&(p.PieceBB[by][BISHOP]|p.PieceBB[by][QUEEN]) != 0 {
+	if knight[sq]&p.PieceBB[by][KNIGHT] != 0 {
 		return true
 	}
-	if knight[sq]&p.PieceBB[by][KNIGHT] != 0 {
+	if p.pseudoBishop(sq)&(p.PieceBB[by][BISHOP]|p.PieceBB[by][QUEEN]) != 0 {
 		return true
 	}
 	if p.pseudoRook(sq)&(p.PieceBB[by][ROOK]|p.PieceBB[by][QUEEN]) != 0 {
@@ -93,4 +98,8 @@ func (p *Position) VerifyZobrist() {
 	if p.Key != old {
 		panic("ZOBRIST DESYNC")
 	}
+}
+
+func (p *Position) PieceAt(sq int) uint8 {
+	return p.Board[sq]
 }

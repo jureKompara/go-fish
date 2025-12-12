@@ -1,54 +1,80 @@
 package engine
 
-import "fmt"
-
-type Move uint32
-
-const (
-	DP      uint8 = 0b00001
-	EP      uint8 = 0b00010
-	KCASTLE uint8 = 0b00100
-	QCASTLE uint8 = 0b01000
-	ISCAP   uint8 = 0b10000
+import (
+	"fmt"
 )
 
-func NewMove(from, to, piece, promo, capture int, flags uint8) Move {
-	return Move(uint32(from) |
-		uint32(to)<<6 |
-		uint32(piece)<<12 |
-		uint32(promo)<<15 |
-		uint32(capture)<<18 |
-		uint32(flags)<<21)
+type Move uint16
+
+const (
+	//flags < 2 are castles
+	KCASTLE uint8 = iota
+	QCASTLE
+	QUIET
+	DOUBLE
+
+	CAPTURE
+	EP
+	FREE1
+	FREE2
+	//flags >= 8 are promotions
+	PROMOKNIGHT
+	PROMOBISHOP
+	PROMOROOOK
+	PROMOQUEEN
+	//flags with 3rd bit set are captures
+	PROMOKNIGHTX
+	PROMOBISHOPX
+	PROMOROOOKX
+	PROMOQUEENX
+)
+
+func NewMove(from, to int, flags uint8) Move {
+	return Move(uint16(from) |
+		uint16(to)<<6 |
+		uint16(flags)<<12)
 }
 
-// there is probably a better way to pack moves becouse I waste
-// 7 whole bits here THIS IS CURSED...DO BETTER!
-// ////////////////////////////////21-31//18-20///15-17//12-14//6-11//0-5
-// geters for packed uint32 Move[[flags][capture][promo][piece][to][from]]
+// ///////////////////////////////12-15//6-11//0-5
+// geters for packed uint16 Move[[flags][to][from]]
 func (m Move) From() int    { return int(m & 0x3F) }
 func (m Move) To() int      { return int((m >> 6) & 0x3F) }
-func (m Move) Piece() int   { return int((m >> 12) & 0x7) }
-func (m Move) Promo() int   { return int((m >> 15) & 0x7) }
-func (m Move) Capture() int { return int((m >> 18) & 0x7) }
-func (m Move) Flags() uint8 { return uint8((m >> 21) & 0x1F) }
+func (m Move) Flags() uint8 { return uint8((m >> 12) & 0xF) }
 
-func (m Move) IsCapture() bool { return m.Flags()&ISCAP != 0 }
-func (m Move) IsEP() bool      { return m.Flags()&EP != 0 }
-func (m Move) IsDP() bool      { return m.Flags()&DP != 0 }
+func IsCapture(flag uint8) bool { return flag&4 != 0 }
+func IsEP(flag uint8) bool      { return flag == EP }
+func IsDP(flag uint8) bool      { return flag == DOUBLE }
+func IsPromo(flag uint8) bool   { return flag >= 8 }
+func IsCastle(flag uint8) bool  { return flag <= 1 }
+
+// this only makes sense if the move is a promo
+func Promo(flag uint8) uint8 {
+	return flag&3 + KNIGHT
+}
 
 // converts a move to UCI notation (e4e5 c7c8q)
 func (m Move) Uci() string {
 	from := m.From()
 	to := m.To()
-	promo := m.Promo()
+	flag := m.Flags()
 
 	r := from >> 3
 	f := from & 7
 	tr := to >> 3
 	tf := to & 7
 
-	if promo != EMPTY {
-		return fmt.Sprintf("%c%d%c%d%c", f+'a', r+1, tf+'a', tr+1, _pieceToChar[promo])
+	//TODO: MAKE THIS NOT SUCK ASS
+	if flag == PROMOKNIGHT || flag == PROMOKNIGHTX {
+		return fmt.Sprintf("%c%d%c%dk", f+'a', r+1, tf+'a', tr+1)
+	}
+	if flag == PROMOBISHOP || flag == PROMOBISHOPX {
+		return fmt.Sprintf("%c%d%c%db", f+'a', r+1, tf+'a', tr+1)
+	}
+	if flag == PROMOROOOK || flag == PROMOROOOKX {
+		return fmt.Sprintf("%c%d%c%dr", f+'a', r+1, tf+'a', tr+1)
+	}
+	if flag == PROMOQUEEN || flag == PROMOQUEENX {
+		return fmt.Sprintf("%c%d%c%dq", f+'a', r+1, tf+'a', tr+1)
 	}
 	return fmt.Sprintf("%c%d%c%d", f+'a', r+1, tf+'a', tr+1)
 
