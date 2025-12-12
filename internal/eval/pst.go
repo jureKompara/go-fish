@@ -4,6 +4,10 @@ import (
 	"go-fish/internal/engine"
 )
 
+var points = [6]int{100, 310, 320, 500, 900, 0}
+
+// returns the evaluation of the position from side to move POV
+// counts material and PST to get the eval
 func Pst(p *engine.Position) int {
 	score := 0
 	for color := range 2 {
