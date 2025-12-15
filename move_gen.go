@@ -4,29 +4,32 @@ import (
 	"math/bits"
 )
 
-//used for promo only generation for generating tactical moves
-//const promotionRanks uint64 = 0xFF000000000000FF
+// used for promo only generation for generating tactical moves
+const promotionRanks uint64 = 0xFF000000000000FF
 
 // returns all pseudo legal moves in the position
 func (p *Position) GenMoves(moves *[]Move) {
 	us := p.Stm
 	enemy := us ^ 1
-
 	ksq := p.kings[us]
-	p.kingBlockers = 0
 
 	checkers := p.Checkers(ksq, enemy)
-	p.checkCount = bits.OnesCount64(checkers)
+	checkCount := bits.OnesCount64(checkers)
+
+	if checkCount == 2 {
+		p.genKingMoves(ksq, moves)
+		return
+	}
 
 	p.checkMask = ^uint64(0) // default: no restriction
-	if p.checkCount == 1 {
+	if checkCount == 1 {
 		c := bits.TrailingZeros64(checkers)
 
 		// If checker is a slider, you can block OR capture
-		if ((p.PieceBB[enemy][BISHOP] | p.PieceBB[enemy][ROOK] | p.PieceBB[enemy][QUEEN]) & (1 << c)) != 0 {
-			p.checkMask = between[ksq][c] | (uint64(1) << c)
+		if has(p.PieceBB[enemy][BISHOP]|p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN], c) {
+			p.checkMask = line[ksq][c]
 		} else {
-			// Knight/pawn/king check: ONLY capture the checker
+			// Knight/pawn check: ONLY capture the checker
 			p.checkMask = uint64(1) << c
 		}
 	}
@@ -34,6 +37,7 @@ func (p *Position) GenMoves(moves *[]Move) {
 	snipers := rookAttTable[ksq][0]&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN]) |
 		bishopAttTable[ksq][0]&(p.PieceBB[enemy][BISHOP]|p.PieceBB[enemy][QUEEN])
 
+	p.kingBlockers = 0
 	for snipers != 0 {
 		sq := PopLSB(&snipers)
 		betweenMask := between[ksq][sq] & p.Occ
@@ -42,10 +46,6 @@ func (p *Position) GenMoves(moves *[]Move) {
 			p.allowed[bits.TrailingZeros64(betweenMask)] = line[ksq][sq]
 		}
 	}
-
-	//snipers bitboard
-
-	//king blockers bitboard
 
 	for piece := PAWN; piece <= KING; piece++ {
 		bb := p.PieceBB[p.Stm][piece]
@@ -74,8 +74,9 @@ func (p *Position) genKingMoves(sq int, moves *[]Move) {
 	enemy := us ^ 1
 
 	mask := king[sq] & ^p.ColorBB[us]
-	captures := mask & p.ColorBB[enemy]
-	quiets := mask & ^p.Occ
+
+	captures := mask & p.Occ
+	quiets := mask & ^captures
 
 	clear(&p.Occ, sq)
 
@@ -97,6 +98,7 @@ func (p *Position) genKingMoves(sq int, moves *[]Move) {
 
 	set(&p.Occ, sq)
 
+	//i already have this info...should do better
 	if !p.isAttacked(sq, enemy) {
 		homeRank := us * 56
 		//kingside castle
@@ -131,73 +133,66 @@ func (p *Position) pseudoPawn(sq int) uint64 {
 	return (pawnPush[us][sq] & ^p.Occ) | pawn[us][sq]&(p.ColorBB[enemy]|1<<p.epSquare)
 }
 
-// we can feed this function any pawn moves
 func (p *Position) genPawnMoves(sq int, moves *[]Move) {
-
-	if p.checkCount == 2 {
-		return
-	}
-
 	us := p.Stm
 	enemy := us ^ 1
 	mask := p.pseudoPawn(sq)
-
-	ep := mask & (1 << p.epSquare)
-
-	if p.checkCount == 1 {
-		mask &= p.checkMask
-	}
 
 	if has(p.kingBlockers, sq) {
 		mask &= p.allowed[sq]
 	}
 
-	captures := mask & p.ColorBB[enemy]
+	ep := mask & (1 << p.epSquare)
 
-	quiets := mask & ^(p.Occ | ep)
+	mask &= p.checkMask
 
-	isPromo := sq>>3 == (6 - 5*us)
+	captures := mask & p.Occ
+
+	quiets := mask & ^(captures | ep)
+
+	promoCaptures := captures & promotionRanks
+	promoQuiets := quiets & promotionRanks
+
+	captures &= ^promoCaptures
+	quiets &= ^promoQuiets
+
+	for promoCaptures != 0 {
+		to := PopLSB(&promoCaptures)
+		*moves = append(*moves, NewMove(sq, to, PROMOQUEENX))
+		*moves = append(*moves, NewMove(sq, to, PROMOKNIGHTX))
+		*moves = append(*moves, NewMove(sq, to, PROMOROOKX))
+		*moves = append(*moves, NewMove(sq, to, PROMOBISHOPX))
+	}
+
+	for promoQuiets != 0 {
+		to := PopLSB(&promoQuiets)
+		*moves = append(*moves, NewMove(sq, to, PROMOQUEEN))
+		*moves = append(*moves, NewMove(sq, to, PROMOKNIGHT))
+		*moves = append(*moves, NewMove(sq, to, PROMOROOOK))
+		*moves = append(*moves, NewMove(sq, to, PROMOBISHOP))
+	}
 
 	for captures != 0 {
 		to := PopLSB(&captures)
-
-		if !isPromo {
-			*moves = append(*moves, NewMove(sq, to, CAPTURE))
-			continue
-		}
-		for promoFlag := PROMOQUEENX; promoFlag >= PROMOKNIGHTX; promoFlag-- {
-			*moves = append(*moves, NewMove(sq, to, promoFlag))
-		}
+		*moves = append(*moves, NewMove(sq, to, CAPTURE))
 	}
 
 	for quiets != 0 {
 		to := PopLSB(&quiets)
-
 		if diff := to - sq; diff == 16 || diff == -16 {
 			*moves = append(*moves, NewMove(sq, to, DOUBLE))
 			continue
 		}
-		if !isPromo {
-			*moves = append(*moves, NewMove(sq, to, QUIET))
-			continue
-		}
-		for promoFlag := PROMOQUEEN; promoFlag >= PROMOKNIGHT; promoFlag-- {
-			*moves = append(*moves, NewMove(sq, to, promoFlag))
-		}
+		*moves = append(*moves, NewMove(sq, to, QUIET))
 	}
 
 	if ep != 0 {
-		to := PopLSB(&ep)
+		to := bits.TrailingZeros64(ep)
 		capSq := to - 8*(1-2*us) // white: to-8, black: to+8
 
-		occ2 := p.Occ
-		occ2 ^= uint64(1) << sq    // pawn leaves from
-		occ2 ^= uint64(1) << capSq // captured pawn disappears
-		occ2 |= uint64(1) << to    // pawn appears on to
+		occ2 := p.Occ ^ (uint64(1)<<sq | uint64(1)<<capSq | uint64(1)<<to)
 
-		ksq := p.kings[us]
-		if (rookAttOcc(ksq, occ2)&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN])) == 0 &&
-			(bishopAttOcc(ksq, occ2)&(p.PieceBB[enemy][BISHOP]|p.PieceBB[enemy][QUEEN])) == 0 {
+		if (rookAttOcc(p.kings[us], occ2) & (p.PieceBB[enemy][ROOK] | p.PieceBB[enemy][QUEEN])) == 0 {
 			*moves = append(*moves, NewMove(sq, to, EP))
 		}
 	}
@@ -207,15 +202,11 @@ func (p *Position) Checkers(sq int, by int) uint64 {
 	return p.pseudoBishop(sq)&(p.PieceBB[by][BISHOP]|p.PieceBB[by][QUEEN]) |
 		p.pseudoRook(sq)&(p.PieceBB[by][ROOK]|p.PieceBB[by][QUEEN]) |
 		knight[sq]&p.PieceBB[by][KNIGHT] |
-		pawn[by^1][sq]&p.PieceBB[by][PAWN] |
-		king[sq]&p.PieceBB[by][KING]
+		pawn[by^1][sq]&p.PieceBB[by][PAWN]
 }
 
 func rookAttOcc(sq int, occ uint64) uint64 {
 	return rookAttTable[sq][(rookMagics[sq]*(maskR[sq]&occ))>>rookShifts[sq]]
-}
-func bishopAttOcc(sq int, occ uint64) uint64 {
-	return bishopAttTable[sq][(bishopMagic[sq]*(maskB[sq]&occ))>>bishopShifts[sq]]
 }
 
 func (p *Position) pseudoRook(sq int) uint64 {
@@ -230,30 +221,21 @@ func (p *Position) pseudoBishop(sq int) uint64 {
 // pawns and kings have promotions and castling so they get their own generators
 func (p *Position) genGenericMoves(sq int, mask uint64, moves *[]Move) {
 
-	if p.checkCount == 2 {
-		return
-	}
-
-	if p.checkCount == 1 {
-		mask &= p.checkMask
-	}
+	mask &= p.checkMask
 
 	if has(p.kingBlockers, sq) {
 		mask &= p.allowed[sq]
 	}
 
-	captures := mask & p.ColorBB[p.Stm^1]
-
-	quiets := mask & ^p.Occ
+	captures := mask & p.Occ
+	quiets := mask & ^captures
 
 	for captures != 0 {
 		to := PopLSB(&captures)
-
 		*moves = append(*moves, NewMove(sq, to, CAPTURE))
 	}
 	for quiets != 0 {
 		to := PopLSB(&quiets)
-
 		*moves = append(*moves, NewMove(sq, to, QUIET))
 	}
 }

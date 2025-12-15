@@ -58,29 +58,23 @@ func (p *Position) Make(move Move) {
 			//p.Key ^= zobristPiece[us][PAWN][to]
 			//p.Key ^= zobristPiece[us][promo][to]
 		}
-
-		p.halfMove = 0
-	} else if IsCapture(flags) {
-		p.halfMove = 0
-	} else {
-		p.halfMove++
 	}
 
 	//p.Key ^= zobristCastle[p.castleRights]
 	//castling rights when rooks move or get capped
 	//TODO: mby there is a better way to do this
 	if p.castleRights != 0 {
-		if to == 0 || fr == 0 {
-			p.castleRights &= 0b1101
-		}
 		if to == 7 || fr == 7 {
 			p.castleRights &= 0b1110
 		}
-		if to == 56 || fr == 56 {
-			p.castleRights &= 0b0111
+		if to == 0 || fr == 0 {
+			p.castleRights &= 0b1101
 		}
 		if to == 63 || fr == 63 {
 			p.castleRights &= 0b1011
+		}
+		if to == 56 || fr == 56 {
+			p.castleRights &= 0b0111
 		}
 	}
 
@@ -113,8 +107,6 @@ func (p *Position) Make(move Move) {
 	}
 
 	p.Occ = p.ColorBB[WHITE] | p.ColorBB[BLACK]
-
-	p.fullMove += us
 
 	//p.Key ^= zobristCastle[p.castleRights]
 	p.Stm ^= 1

@@ -40,7 +40,7 @@ func (p *Position) Unmake(move Move) {
 		set(&(p.ColorBB[enemy]), behind)
 		p.Board[behind] = PAWN
 	} else if IsCapture(flags) {
-		capture := state.capture
+		capture := state.Capture()
 		set(&(p.PieceBB[enemy][capture]), to)
 		set(&(p.ColorBB[enemy]), to)
 		p.Board[to] = capture
@@ -71,11 +71,9 @@ func (p *Position) Unmake(move Move) {
 	}
 	p.Occ = p.ColorBB[WHITE] | p.ColorBB[BLACK]
 
-	p.castleRights = state.castleRights
-	p.epSquare = state.epSquare
-	p.halfMove = state.halfmove
+	p.castleRights = state.CastleRights()
+	p.epSquare = state.EPsquare()
 
-	p.fullMove -= us
 	p.Stm ^= 1
 	p.Ply--
 }

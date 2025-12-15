@@ -25,14 +25,12 @@ const (
 	//flags with 3rd bit set are captures
 	PROMOKNIGHTX
 	PROMOBISHOPX
-	PROMOROOOKX
+	PROMOROOKX
 	PROMOQUEENX
 )
 
 func NewMove(from, to int, flags uint8) Move {
-	return Move(uint16(from) |
-		uint16(to)<<6 |
-		uint16(flags)<<12)
+	return Move(uint16(from) | uint16(to)<<6 | uint16(flags)<<12)
 }
 
 // ///////////////////////////////12-15//6-11//0-5
@@ -70,7 +68,7 @@ func (m Move) Uci() string {
 	if flag == PROMOBISHOP || flag == PROMOBISHOPX {
 		return fmt.Sprintf("%c%d%c%db", f+'a', r+1, tf+'a', tr+1)
 	}
-	if flag == PROMOROOOK || flag == PROMOROOOKX {
+	if flag == PROMOROOOK || flag == PROMOROOKX {
 		return fmt.Sprintf("%c%d%c%dr", f+'a', r+1, tf+'a', tr+1)
 	}
 	if flag == PROMOQUEEN || flag == PROMOQUEENX {

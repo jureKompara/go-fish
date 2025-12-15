@@ -1,10 +1,8 @@
 package main
 
 // type representing a state prior to a move that was made
-type State struct {
-	capture      uint8
-	castleRights uint8
-	epSquare     uint8
-	halfmove     uint8
-	//add hash and other stuff that is nice to cache here
-}
+type State uint16
+
+func (s State) Capture() uint8      { return uint8(s & 0x7) }
+func (s State) CastleRights() uint8 { return uint8(s >> 3 & 0xF) }
+func (s State) EPsquare() uint8     { return uint8(s >> 7 & 0x7F) }

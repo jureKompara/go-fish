@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strconv"
 	"strings"
 )
 
@@ -37,7 +36,7 @@ var Tests = []TestCase{
 	},
 }
 
-var CharToPiece = ['r' + 1]int{
+var CharToPiece = ['r' + 1]uint8{
 	'P': PAWN,
 	'N': KNIGHT,
 	'B': BISHOP,
@@ -52,7 +51,7 @@ var CharToPiece = ['r' + 1]int{
 	'k': KING,
 }
 
-var _pieceToChar = [7]int{
+var _pieceToChar = [7]uint8{
 	PAWN:   'P',
 	KNIGHT: 'N',
 	BISHOP: 'B',
@@ -72,8 +71,6 @@ func FromFen(fen string) Position {
 	clr := split[1]
 	cr := split[2]
 	ep := split[3]
-	fm := split[4]
-	hm := split[5]
 
 	var color int
 
@@ -98,7 +95,7 @@ func FromFen(fen string) Position {
 		}
 		if '1' <= c && c <= '8' {
 			for i := range int(c - '0') {
-				b[rank*8+file+i] = uint8(EMPTY)
+				b[rank*8+file+i] = EMPTY
 			}
 			file += int(c) - '0'
 			continue
@@ -145,10 +142,6 @@ func FromFen(fen string) Position {
 		epSquare = int(8*(split[3][1]-'1') + split[3][0] - 'a')
 	}
 
-	full_move, _ := strconv.ParseInt(fm, 10, 16)
-
-	half_move, _ := strconv.ParseInt(hm, 10, 8)
-
 	//derived bit boards
 	for piece := PAWN; piece <= KING; piece++ {
 		allBB[WHITE] |= pieceBB[WHITE][piece]
@@ -164,8 +157,6 @@ func FromFen(fen string) Position {
 		Stm:          toMove,
 		castleRights: castleRights,
 		epSquare:     uint8(epSquare),
-		fullMove:     int(full_move),
-		halfMove:     uint8(half_move),
 		kings:        kings,
 	}
 	return pos
