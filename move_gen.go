@@ -153,8 +153,8 @@ func (p *Position) genPawnMoves(sq int, moves *[]Move) {
 	promoCaptures := captures & promotionRanks
 	promoQuiets := quiets & promotionRanks
 
-	captures &= ^promoCaptures
-	quiets &= ^promoQuiets
+	captures ^= promoCaptures
+	quiets ^= promoQuiets
 
 	for promoCaptures != 0 {
 		to := PopLSB(&promoCaptures)
