@@ -1,4 +1,4 @@
-package engine
+package main
 
 import (
 	"strconv"
@@ -159,92 +159,14 @@ func FromFen(fen string) Position {
 	var pos = Position{
 		PieceBB:      pieceBB,
 		ColorBB:      allBB,
-		Occupancy:    occupant,
+		Occ:          occupant,
 		Board:        b,
-		ToMove:       toMove,
+		Stm:          toMove,
 		castleRights: castleRights,
-		epSquare:     epSquare,
+		epSquare:     uint8(epSquare),
 		fullMove:     int(full_move),
-		halfMove:     int(half_move),
+		halfMove:     uint8(half_move),
 		kings:        kings,
 	}
-	pos.GenerateZobrist()
 	return pos
 }
-
-/*
-func (p *Position) exportFen() string {
-	var sb strings.Builder
-	var count int
-
-	//we build up a board to easily turn it to a fen
-	var board [64]byte
-	for p, bb := range p.PieceBB {
-		for bb != 0 {
-			board[PopLSB(&bb)] = byte(p + 1)
-		}
-	}
-
-	for rank := 7; rank >= 0; rank-- {
-		for file := range 8 {
-			sq := rank*8 + file
-
-			c := board[sq]
-			if c == 0 {
-				count++
-				continue
-			}
-			if count > 0 {
-				sb.WriteByte(byte(count + '0'))
-				count = 0
-			}
-			sb.WriteByte(byte(_pieceToChar[(c-1)%6]) + (c-1)/6*32)
-		}
-		if count > 0 {
-			sb.WriteByte(byte(count + '0'))
-			count = 0
-		}
-		if rank != 0 {
-			sb.WriteByte('/')
-		}
-	}
-
-	if p.ToMove == 0 {
-		sb.WriteString(" w ")
-	} else {
-		sb.WriteString(" b ")
-	}
-
-	if p.castleRights == 0 {
-		sb.WriteString("-")
-	} else {
-		if p.castleRights&0b0001 != 0 {
-			sb.WriteByte('K')
-		}
-		if p.castleRights&0b0010 != 0 {
-			sb.WriteByte('Q')
-		}
-		if p.castleRights&0b0100 != 0 {
-			sb.WriteByte('k')
-		}
-		if p.castleRights&0b1000 != 0 {
-			sb.WriteByte('q')
-		}
-	}
-	if p.epSquare == 64 {
-		sb.WriteString(" - ")
-	} else {
-		sb.WriteByte(' ')
-		sb.WriteByte(byte('a' + p.epSquare&7))
-		sb.WriteByte(byte('1' + p.epSquare>>3))
-		sb.WriteByte(' ')
-	}
-	var buf [8]byte
-	b := strconv.AppendInt(buf[:0], int64(p.fullMove), 10)
-	b = append(b, ' ')
-	b = strconv.AppendInt(b, int64(p.halfMove), 10)
-	sb.Write(b)
-
-	return sb.String()
-}
-*/

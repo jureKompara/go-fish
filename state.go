@@ -1,4 +1,4 @@
-package engine
+package main
 
 // type representing a state prior to a move that was made
 type State struct {

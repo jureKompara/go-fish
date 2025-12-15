@@ -1,29 +1,23 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
-	"go-fish/internal/engine"
 	"os"
 	"runtime/pprof"
 	"time"
 )
 
-var TTProbe = 0
-var TTHit = 0
-var ttCutoffs = 0
-
 func main() {
 
 	//init stuff
-	engine.Init()
+	Init()
 
 	debug := flag.Bool("debug", false, "runs perft on six positions from the wiki")
 	prof := flag.Bool("prof", false, "enable profiling")
 	perft := flag.Bool("perft", false, "run perft")
+	bulk := flag.Bool("bulk", false, "run bulk perft")
 	divide := flag.Bool("divide", false, "run perftDevide")
-	test := flag.Bool("test", false, "run test positions for debuging search")
 	depth := flag.Int("depth", 5, "set depth for search/perft")
 	flag.Parse()
 
@@ -38,10 +32,15 @@ func main() {
 
 	if *perft {
 
-		fen := engine.Tests[0].FEN
-		pos := engine.FromFen(fen)
+		fen := Tests[0].FEN
+		pos := FromFen(fen)
 		start := time.Now()
-		nodes := pos.Perft(*depth)
+		var nodes uint64
+		if *bulk {
+			nodes = pos.Bulk(*depth)
+		} else {
+			nodes = pos.Perft(*depth)
+		}
 		elapsed := time.Since(start)
 		fmt.Printf("FEN: %s\n", fen)
 		fmt.Printf("depth: %d\n", *depth)
@@ -52,31 +51,19 @@ func main() {
 	} else if *debug {
 
 		start := time.Now()
-		engine.Test(*depth)
+		Test(*depth)
 		elapsed := time.Since(start)
 		fmt.Printf("t: %s\n", elapsed)
 
-	} else if *test {
-
-		Test(depth)
-
 	} else if *divide {
 
-		fen := engine.Tests[0].FEN
-		pos := engine.FromFen(fen)
+		fen := Tests[0].FEN
+		pos := FromFen(fen)
 		nodes := pos.PerftDivide(*depth)
 
 		fmt.Printf("depth: %d\n", *depth)
 		fmt.Printf("FEN: %s\n", fen)
 		fmt.Printf("N: %d\n", nodes)
-
-	} else {
-
-		scanner := bufio.NewScanner(os.Stdin)
-		var p engine.Position
-		for scanner.Scan() {
-			handleUci(scanner.Text(), &p)
-		}
 
 	}
 }

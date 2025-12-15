@@ -1,4 +1,4 @@
-package engine
+package main
 
 var knight = [64]uint64{132096, 329728, 659712,
 	1319424, 2638848, 5277696,

@@ -1,8 +1,7 @@
-package engine
+package main
 
 import (
 	"math/bits"
-	"math/rand/v2"
 )
 
 // movement offsets for sliders
@@ -77,12 +76,12 @@ var rookMagics = [64]uint64{36046938962935810, 594545519825526784,
 
 var maskR [64]uint64
 var occR [64][4096]uint64
-var bishopAttTable [64][4096]uint64
-
-var maskB [64]uint64
-var occB [64][4096]uint64
 var rookAttTable [64][4096]uint64
 var rookShifts [64]int
+
+var maskB [64]uint64
+var occB [64][512]uint64
+var bishopAttTable [64][512]uint64
 var bishopShifts [64]int
 
 func genBishopMask(sq int) uint64 {
@@ -186,22 +185,9 @@ func Init() {
 			bishopAttTable[sq][idx] = sliderAttacks(sq, occ, bishOff[:])
 		}
 	}
-	//zobrsit numbers init
-	for color := range 2 {
-		for piece := PAWN; piece <= KING; piece++ {
-			for sq := range 64 {
-				zobristPiece[color][piece][sq] = rand.Uint64()
-			}
-		}
-	}
-	zobristSide = rand.Uint64()
 
-	for i := range 16 {
-		zobristCastle[i] = rand.Uint64()
-	}
-	for i := range 8 {
-		zobristEP[i] = rand.Uint64()
-	}
+	fill()
+
 }
 
 func sliderAttacks(sq int, occ uint64, deltas []int) uint64 {

@@ -1,0 +1,259 @@
+package main
+
+import (
+	"math/bits"
+)
+
+//used for promo only generation for generating tactical moves
+//const promotionRanks uint64 = 0xFF000000000000FF
+
+// returns all pseudo legal moves in the position
+func (p *Position) GenMoves(moves *[]Move) {
+	us := p.Stm
+	enemy := us ^ 1
+
+	ksq := p.kings[us]
+	p.kingBlockers = 0
+
+	checkers := p.Checkers(ksq, enemy)
+	p.checkCount = bits.OnesCount64(checkers)
+
+	p.checkMask = ^uint64(0) // default: no restriction
+	if p.checkCount == 1 {
+		c := bits.TrailingZeros64(checkers)
+
+		// If checker is a slider, you can block OR capture
+		if ((p.PieceBB[enemy][BISHOP] | p.PieceBB[enemy][ROOK] | p.PieceBB[enemy][QUEEN]) & (1 << c)) != 0 {
+			p.checkMask = between[ksq][c] | (uint64(1) << c)
+		} else {
+			// Knight/pawn/king check: ONLY capture the checker
+			p.checkMask = uint64(1) << c
+		}
+	}
+
+	snipers := rookAttTable[ksq][0]&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN]) |
+		bishopAttTable[ksq][0]&(p.PieceBB[enemy][BISHOP]|p.PieceBB[enemy][QUEEN])
+
+	for snipers != 0 {
+		sq := PopLSB(&snipers)
+		betweenMask := between[ksq][sq] & p.Occ
+		if bits.OnesCount64(betweenMask) == 1 && betweenMask&p.ColorBB[us] != 0 {
+			p.kingBlockers |= betweenMask
+			p.allowed[bits.TrailingZeros64(betweenMask)] = line[ksq][sq]
+		}
+	}
+
+	//snipers bitboard
+
+	//king blockers bitboard
+
+	for piece := PAWN; piece <= KING; piece++ {
+		bb := p.PieceBB[p.Stm][piece]
+		for bb != 0 {
+			sq := PopLSB(&bb)
+			switch piece {
+			case PAWN:
+				p.genPawnMoves(sq, moves)
+			case KNIGHT:
+				p.genGenericMoves(sq, knight[sq] & ^p.ColorBB[us], moves)
+			case BISHOP:
+				p.genGenericMoves(sq, p.pseudoBishop(sq) & ^p.ColorBB[us], moves)
+			case ROOK:
+				p.genGenericMoves(sq, p.pseudoRook(sq) & ^p.ColorBB[us], moves)
+			case QUEEN:
+				p.genGenericMoves(sq, (p.pseudoBishop(sq)|p.pseudoRook(sq)) & ^p.ColorBB[us], moves)
+			case KING:
+				p.genKingMoves(sq, moves)
+			}
+		}
+	}
+}
+
+func (p *Position) genKingMoves(sq int, moves *[]Move) {
+	us := p.Stm
+	enemy := us ^ 1
+
+	mask := king[sq] & ^p.ColorBB[us]
+	captures := mask & p.ColorBB[enemy]
+	quiets := mask & ^p.Occ
+
+	clear(&p.Occ, sq)
+
+	for captures != 0 {
+		to := PopLSB(&captures)
+		if p.isAttacked(to, enemy) {
+			continue
+		}
+		*moves = append(*moves, NewMove(sq, to, CAPTURE))
+	}
+
+	for quiets != 0 {
+		to := PopLSB(&quiets)
+		if p.isAttacked(to, enemy) {
+			continue
+		}
+		*moves = append(*moves, NewMove(sq, to, QUIET))
+	}
+
+	set(&p.Occ, sq)
+
+	if !p.isAttacked(sq, enemy) {
+		homeRank := us * 56
+		//kingside castle
+		if p.castleRights&(0b0001<<(2*us)) != 0 &&
+			!has(p.Occ, homeRank+5) &&
+			!has(p.Occ, homeRank+6) &&
+			!p.isAttacked(sq+1, enemy) &&
+			!p.isAttacked(sq+2, enemy) {
+			*moves = append(*moves, NewMove(sq, sq+2, KCASTLE))
+		}
+		//queenside castle
+		if p.castleRights&(0b0010<<(2*us)) != 0 &&
+			!has(p.Occ, homeRank+3) &&
+			!has(p.Occ, homeRank+2) &&
+			!has(p.Occ, homeRank+1) &&
+			!p.isAttacked(sq-1, enemy) &&
+			!p.isAttacked(sq-2, enemy) {
+			*moves = append(*moves, NewMove(sq, sq-2, QCASTLE))
+		}
+	}
+}
+
+// returns a bitboard with all posible pawn moves
+func (p *Position) pseudoPawn(sq int) uint64 {
+	us := p.Stm
+	enemy := us ^ 1
+	front := sq + 8 - 16*us
+	//if the front square is occupied
+	if has(p.Occ, front) {
+		return pawn[us][sq] & (p.ColorBB[enemy] | 1<<p.epSquare)
+	}
+	return (pawnPush[us][sq] & ^p.Occ) | pawn[us][sq]&(p.ColorBB[enemy]|1<<p.epSquare)
+}
+
+// we can feed this function any pawn moves
+func (p *Position) genPawnMoves(sq int, moves *[]Move) {
+
+	if p.checkCount == 2 {
+		return
+	}
+
+	us := p.Stm
+	enemy := us ^ 1
+	mask := p.pseudoPawn(sq)
+
+	ep := mask & (1 << p.epSquare)
+
+	if p.checkCount == 1 {
+		mask &= p.checkMask
+	}
+
+	if has(p.kingBlockers, sq) {
+		mask &= p.allowed[sq]
+	}
+
+	captures := mask & p.ColorBB[enemy]
+
+	quiets := mask & ^(p.Occ | ep)
+
+	isPromo := sq>>3 == (6 - 5*us)
+
+	for captures != 0 {
+		to := PopLSB(&captures)
+
+		if !isPromo {
+			*moves = append(*moves, NewMove(sq, to, CAPTURE))
+			continue
+		}
+		for promoFlag := PROMOQUEENX; promoFlag >= PROMOKNIGHTX; promoFlag-- {
+			*moves = append(*moves, NewMove(sq, to, promoFlag))
+		}
+	}
+
+	for quiets != 0 {
+		to := PopLSB(&quiets)
+
+		if diff := to - sq; diff == 16 || diff == -16 {
+			*moves = append(*moves, NewMove(sq, to, DOUBLE))
+			continue
+		}
+		if !isPromo {
+			*moves = append(*moves, NewMove(sq, to, QUIET))
+			continue
+		}
+		for promoFlag := PROMOQUEEN; promoFlag >= PROMOKNIGHT; promoFlag-- {
+			*moves = append(*moves, NewMove(sq, to, promoFlag))
+		}
+	}
+
+	if ep != 0 {
+		to := PopLSB(&ep)
+		capSq := to - 8*(1-2*us) // white: to-8, black: to+8
+
+		occ2 := p.Occ
+		occ2 ^= uint64(1) << sq    // pawn leaves from
+		occ2 ^= uint64(1) << capSq // captured pawn disappears
+		occ2 |= uint64(1) << to    // pawn appears on to
+
+		ksq := p.kings[us]
+		if (rookAttOcc(ksq, occ2)&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN])) == 0 &&
+			(bishopAttOcc(ksq, occ2)&(p.PieceBB[enemy][BISHOP]|p.PieceBB[enemy][QUEEN])) == 0 {
+			*moves = append(*moves, NewMove(sq, to, EP))
+		}
+	}
+}
+
+func (p *Position) Checkers(sq int, by int) uint64 {
+	return p.pseudoBishop(sq)&(p.PieceBB[by][BISHOP]|p.PieceBB[by][QUEEN]) |
+		p.pseudoRook(sq)&(p.PieceBB[by][ROOK]|p.PieceBB[by][QUEEN]) |
+		knight[sq]&p.PieceBB[by][KNIGHT] |
+		pawn[by^1][sq]&p.PieceBB[by][PAWN] |
+		king[sq]&p.PieceBB[by][KING]
+}
+
+func rookAttOcc(sq int, occ uint64) uint64 {
+	return rookAttTable[sq][(rookMagics[sq]*(maskR[sq]&occ))>>rookShifts[sq]]
+}
+func bishopAttOcc(sq int, occ uint64) uint64 {
+	return bishopAttTable[sq][(bishopMagic[sq]*(maskB[sq]&occ))>>bishopShifts[sq]]
+}
+
+func (p *Position) pseudoRook(sq int) uint64 {
+	return rookAttTable[sq][(rookMagics[sq] * (maskR[sq] & p.Occ) >> rookShifts[sq])]
+}
+
+func (p *Position) pseudoBishop(sq int) uint64 {
+	return bishopAttTable[sq][(bishopMagic[sq] * (maskB[sq] & p.Occ) >> bishopShifts[sq])]
+}
+
+// generates knight and slider moves becouse they have no special cases
+// pawns and kings have promotions and castling so they get their own generators
+func (p *Position) genGenericMoves(sq int, mask uint64, moves *[]Move) {
+
+	if p.checkCount == 2 {
+		return
+	}
+
+	if p.checkCount == 1 {
+		mask &= p.checkMask
+	}
+
+	if has(p.kingBlockers, sq) {
+		mask &= p.allowed[sq]
+	}
+
+	captures := mask & p.ColorBB[p.Stm^1]
+
+	quiets := mask & ^p.Occ
+
+	for captures != 0 {
+		to := PopLSB(&captures)
+
+		*moves = append(*moves, NewMove(sq, to, CAPTURE))
+	}
+	for quiets != 0 {
+		to := PopLSB(&quiets)
+
+		*moves = append(*moves, NewMove(sq, to, QUIET))
+	}
+}

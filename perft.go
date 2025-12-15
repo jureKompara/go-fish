@@ -1,4 +1,4 @@
-package engine
+package main
 
 import (
 	"fmt"
@@ -34,25 +34,30 @@ func (p *Position) Perft(depth int) uint64 {
 	}
 	moves := p.Movebuff[p.Ply][:0]
 	p.GenMoves(&moves)
+	nodes := uint64(0)
+	for _, move := range moves {
+		p.Make(move)
+		nodes += p.Perft(depth - 1)
+		p.Unmake(move)
+	}
+	return nodes
+}
+
+func (p *Position) Bulk(depth int) uint64 {
+	if depth == 0 {
+		return 1
+	}
+	moves := p.Movebuff[p.Ply][:0]
+	p.GenMoves(&moves)
 	// base case depth==1 we dont go to depth 0
 	// we just look if the moves are legal and count them
 	if depth == 1 {
-		count := uint64(0)
-		for _, move := range moves {
-			p.Make(move)
-			if !p.InCheck(p.ToMove ^ 1) {
-				count++
-			}
-			p.Unmake(move)
-		}
-		return count
+		return uint64(len(moves))
 	}
 	nodes := uint64(0)
 	for _, move := range moves {
 		p.Make(move)
-		if !p.InCheck(p.ToMove ^ 1) {
-			nodes += p.Perft(depth - 1)
-		}
+		nodes += p.Bulk(depth - 1)
 		p.Unmake(move)
 	}
 	return nodes
@@ -71,15 +76,15 @@ func (p *Position) PerftDivide(depth int) uint64 {
 		snapCR := p.castleRights
 		snapEP := p.epSquare
 		snapHM := p.halfMove
-		snapTM := p.ToMove
+		snapTM := p.Stm
 		snapFM := p.fullMove
 		snapAll := p.ColorBB
-		snapOcc := p.Occupancy
+		snapOcc := p.Occ
 		snapKings := p.kings
 		snapPieces := p.PieceBB
 		p.Make(move)
 		n := uint64(0)
-		if !p.isAttacked(p.kings[p.ToMove^1], p.ToMove) {
+		if !p.isAttacked(p.kings[p.Stm^1], p.Stm) {
 			n = p.Perft(depth - 1)
 			fmt.Printf("%s: %d\n", move.Uci(), n)
 		}
@@ -88,10 +93,10 @@ func (p *Position) PerftDivide(depth int) uint64 {
 		if p.castleRights != snapCR ||
 			p.epSquare != snapEP ||
 			p.halfMove != snapHM ||
-			p.ToMove != snapTM ||
+			p.Stm != snapTM ||
 			p.fullMove != snapFM ||
 			p.ColorBB != snapAll ||
-			p.Occupancy != snapOcc ||
+			p.Occ != snapOcc ||
 			p.kings != snapKings ||
 			p.PieceBB != snapPieces {
 			panic("state mismatch")

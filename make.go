@@ -1,27 +1,27 @@
-package engine
+package main
 
 func (p *Position) Make(move Move) {
-	to := move.To()
 	fr := move.From()
-	piece := p.PieceAt(fr)
+	to := move.To()
+
 	flags := move.Flags()
-	us := p.ToMove
+
+	us := p.Stm
 	enemy := us ^ 1
 
-	capture := p.Board[to]
+	piece := p.PieceAt(fr)
+	capture := p.PieceAt(to)
 	p.save(capture)
 
 	//our piece will always end up at to
 	set(&(p.PieceBB[us][piece]), to)
 	set(&(p.ColorBB[us]), to)
-	set(&(p.Occupancy), to)
 	p.Board[to] = piece
 	//p.Key ^= zobristPiece[us][piece][to]
 
 	//our piece will always leave from
 	clear(&(p.PieceBB[us][piece]), fr)
 	clear(&(p.ColorBB[us]), fr)
-	clear(&(p.Occupancy), fr)
 	p.Board[fr] = EMPTY
 	//p.Key ^= zobristPiece[us][piece][fr]
 
@@ -43,17 +43,14 @@ func (p *Position) Make(move Move) {
 		//after a double push or clearing the pawn after an ep capture
 		ep := to - 8*(1-2*us)
 		if IsDP(flags) {
-			p.epSquare = ep
+			p.epSquare = uint8(ep)
 			//p.Key ^= zobristEP[ep&7]
-		}
-		if IsEP(flags) {
+		} else if IsEP(flags) {
 			clear(&(p.PieceBB[enemy][PAWN]), ep)
 			clear(&(p.ColorBB[enemy]), ep)
-			clear(&(p.Occupancy), ep)
 			p.Board[ep] = EMPTY
 			//p.Key ^= zobristPiece[enemy][PAWN][ep]
-		}
-		if IsPromo(flags) {
+		} else if IsPromo(flags) {
 			promo := Promo(flags)
 			clear(&(p.PieceBB[us][PAWN]), to)
 			set(&(p.PieceBB[us][promo]), to)
@@ -95,37 +92,32 @@ func (p *Position) Make(move Move) {
 		case KCASTLE:
 			clear(&(p.PieceBB[us][ROOK]), 7+homeRank)
 			clear(&(p.ColorBB[us]), 7+homeRank)
-			clear(&(p.Occupancy), 7+homeRank)
-			p.Board[7+homeRank] = uint8(EMPTY)
+			p.Board[7+homeRank] = EMPTY
 			//p.Key ^= zobristPiece[us][ROOK][7+homeRank]
 
 			set(&(p.PieceBB[us][ROOK]), 5+homeRank)
 			set(&(p.ColorBB[us]), 5+homeRank)
-			set(&(p.Occupancy), 5+homeRank)
-			p.Board[5+homeRank] = uint8(ROOK)
+			p.Board[5+homeRank] = ROOK
 			//p.Key ^= zobristPiece[us][ROOK][5+homeRank]
-
 		case QCASTLE:
 			clear(&(p.PieceBB[us][ROOK]), homeRank)
 			clear(&(p.ColorBB[us]), homeRank)
-			clear(&(p.Occupancy), homeRank)
-			p.Board[homeRank] = uint8(EMPTY)
+			p.Board[homeRank] = EMPTY
 			//p.Key ^= zobristPiece[us][ROOK][homeRank]
 
 			set(&(p.PieceBB[us][ROOK]), 3+homeRank)
 			set(&(p.ColorBB[us]), 3+homeRank)
-			set(&(p.Occupancy), 3+homeRank)
-			p.Board[3+homeRank] = uint8(ROOK)
+			p.Board[3+homeRank] = ROOK
 			//p.Key ^= zobristPiece[us][ROOK][3+homeRank]
 		}
 	}
 
-	if us == BLACK {
-		p.fullMove++
-	}
+	p.Occ = p.ColorBB[WHITE] | p.ColorBB[BLACK]
+
+	p.fullMove += us
 
 	//p.Key ^= zobristCastle[p.castleRights]
-	p.ToMove = enemy
+	p.Stm ^= 1
 	//p.Key ^= zobristSide
 	p.Ply++
 }
