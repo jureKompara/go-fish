@@ -8,6 +8,8 @@ import (
 var bishOff = [4]int{7, 9, -7, -9}
 var rookOff = [4]int{1, 8, -1, -8}
 
+var castleMask [64]uint8
+
 var bishopMagic = [64]uint64{17012709370506903680, 14255036331561329170,
 	16658890357802845336, 2857819918227750912,
 	8753045217836173600, 13096753873959258656,
@@ -99,6 +101,27 @@ func genBishopMask(sq int) uint64 {
 	return out
 }
 
+func genCastleMask() {
+	for sq := range 64 {
+		switch sq {
+		case 7:
+			castleMask[sq] = 0b1110
+		case 0:
+			castleMask[sq] = 0b1101
+		case 63:
+			castleMask[sq] = 0b1011
+		case 56:
+			castleMask[sq] = 0b0111
+		case 4:
+			castleMask[sq] = 0b1100
+		case 60:
+			castleMask[sq] = 0b0011
+		default:
+			castleMask[sq] = 0b1111
+		}
+	}
+}
+
 func genRookMask(sq int) uint64 {
 	var out uint64
 	file := sq & 7
@@ -129,13 +152,15 @@ func Init() {
 		maskB[i] = genBishopMask(i)
 	}
 
+	genCastleMask()
+
 	//The next two for loops generate all possible relevant occupancies
 	//for a square
 	for sq, bb := range maskR {
 		count := bits.OnesCount64(bb)
 		l := make([]int, 0, count)
 		for bb != 0 {
-			l = append(l, int(PopLSB(&bb)))
+			l = append(l, PopLSB(&bb))
 		}
 		for i := range 1 << count {
 			cock := uint64(i)
@@ -148,7 +173,7 @@ func Init() {
 		count := bits.OnesCount64(bb)
 		l := make([]int, 0, count)
 		for bb != 0 {
-			l = append(l, int(PopLSB(&bb)))
+			l = append(l, PopLSB(&bb))
 		}
 		for i := range 1 << count {
 			cock := uint64(i)
@@ -185,9 +210,7 @@ func Init() {
 			bishopAttTable[sq][idx] = sliderAttacks(sq, occ, bishOff[:])
 		}
 	}
-
 	fill()
-
 }
 
 func sliderAttacks(sq int, occ uint64, deltas []int) uint64 {

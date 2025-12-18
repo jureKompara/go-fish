@@ -151,7 +151,7 @@ func FromFen(fen string) Position {
 
 	var pos = Position{
 		PieceBB:      pieceBB,
-		ColorBB:      allBB,
+		ColorOcc:     allBB,
 		Occ:          occupant,
 		Board:        b,
 		Stm:          toMove,

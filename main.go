@@ -32,7 +32,7 @@ func main() {
 
 	if *perft {
 
-		fen := Tests[0].FEN
+		fen := Tests[1].FEN
 		pos := FromFen(fen)
 		start := time.Now()
 		var nodes uint64

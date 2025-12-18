@@ -18,7 +18,7 @@ const (
 
 type Position struct {
 	PieceBB      [2][6]uint64   //per piece per color bitboards
-	ColorBB      [2]uint64      //per color bitboards
+	ColorOcc     [2]uint64      //per color bitboards
 	Occ          uint64         //is there any piece here bitboard
 	Board        [64]uint8      //keeps track of what piece is on Board[sq]
 	Stm          int            //side to move 0=white 1=black
@@ -39,7 +39,6 @@ func (p *Position) save(capture uint8) {
 }
 
 func (p *Position) isAttacked(sq int, by int) bool {
-
 	if p.pseudoBishop(sq)&(p.PieceBB[by][BISHOP]|p.PieceBB[by][QUEEN]) != 0 {
 		return true
 	}
@@ -58,6 +57,21 @@ func (p *Position) isAttacked(sq int, by int) bool {
 	return false
 }
 
-func (p *Position) PieceAt(sq int) uint8 {
-	return p.Board[sq]
+func (p *Position) isAttackedOcc(sq int, by int, occ uint64) bool {
+	if bishopAttOcc(sq, occ)&(p.PieceBB[by][BISHOP]|p.PieceBB[by][QUEEN]) != 0 {
+		return true
+	}
+	if rookAttOcc(sq, occ)&(p.PieceBB[by][ROOK]|p.PieceBB[by][QUEEN]) != 0 {
+		return true
+	}
+	if knight[sq]&p.PieceBB[by][KNIGHT] != 0 {
+		return true
+	}
+	if pawn[by^1][sq]&p.PieceBB[by][PAWN] != 0 {
+		return true
+	}
+	if king[sq]&p.PieceBB[by][KING] != 0 {
+		return true
+	}
+	return false
 }

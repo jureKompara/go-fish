@@ -12,17 +12,14 @@ func set(bbptr *uint64, index int) {
 	*bbptr |= 1 << index
 }
 
-func clear(bbptr *uint64, index int) {
-	*bbptr &= ^(1 << index)
-}
-
-func has(b uint64, sq int) bool {
-	return (b & (1 << sq)) != 0
+func has(bb uint64, sq int) bool {
+	return (bb & (1 << sq)) != 0
 }
 
 func PopLSB(bb *uint64) int {
-	lsb_ix := bits.TrailingZeros64(*bb)
-	*bb &= *bb - 1
+	x := *bb
+	lsb_ix := bits.TrailingZeros64(x)
+	*bb = x & (x - 1)
 	return lsb_ix
 }
 

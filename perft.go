@@ -33,8 +33,9 @@ func (p *Position) Perft(depth int) uint64 {
 	if depth == 0 {
 		return 1
 	}
-	moves := p.Movebuff[p.Ply][:0]
-	p.GenMoves(&moves)
+	moves := p.Movebuff[p.Ply][:]
+	n := p.GenMoves(moves)
+	moves = moves[:n]
 	nodes := uint64(0)
 	for _, move := range moves {
 		p.Make(move)
@@ -46,8 +47,9 @@ func (p *Position) Perft(depth int) uint64 {
 
 // will break on Bulk(0)
 func (p *Position) Bulk(depth int) uint64 {
-	moves := p.Movebuff[p.Ply][:0]
-	p.GenMoves(&moves)
+	moves := p.Movebuff[p.Ply][:]
+	n := p.GenMoves(moves)
+	moves = moves[:n]
 	// base case depth==1 we just count legal moves
 	if depth == 1 {
 		return uint64(len(moves))
@@ -67,14 +69,15 @@ func (p *Position) PerftDivide(depth int) uint64 {
 	if depth == 0 {
 		return 1
 	}
-	moves := p.Movebuff[p.Ply][:0]
-	p.GenMoves(&moves)
+	moves := p.Movebuff[p.Ply][:]
+	n := p.GenMoves(moves)
+	moves = moves[:n]
 	nodes := uint64(0)
 	for _, move := range moves {
 		snapCR := p.castleRights
 		snapEP := p.epSquare
 		snapTM := p.Stm
-		snapAll := p.ColorBB
+		snapAll := p.ColorOcc
 		snapOcc := p.Occ
 		snapKings := p.kings
 		snapPieces := p.PieceBB
@@ -90,7 +93,7 @@ func (p *Position) PerftDivide(depth int) uint64 {
 		if p.castleRights != snapCR ||
 			p.epSquare != snapEP ||
 			p.Stm != snapTM ||
-			p.ColorBB != snapAll ||
+			p.ColorOcc != snapAll ||
 			p.Occ != snapOcc ||
 			p.kings != snapKings ||
 			p.PieceBB != snapPieces {
