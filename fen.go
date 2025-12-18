@@ -51,16 +51,6 @@ var CharToPiece = ['r' + 1]uint8{
 	'k': KING,
 }
 
-var _pieceToChar = [7]uint8{
-	PAWN:   'P',
-	KNIGHT: 'N',
-	BISHOP: 'B',
-	ROOK:   'R',
-	QUEEN:  'Q',
-	KING:   'K',
-	EMPTY:  0,
-}
-
 func StartPos() Position {
 	return FromFen(starting_pos)
 }
@@ -143,7 +133,7 @@ func FromFen(fen string) Position {
 	}
 
 	//derived bit boards
-	for piece := PAWN; piece <= KING; piece++ {
+	for piece := KNIGHT; piece <= KING; piece++ {
 		allBB[WHITE] |= pieceBB[WHITE][piece]
 		allBB[BLACK] |= pieceBB[BLACK][piece]
 	}

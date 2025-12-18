@@ -138,93 +138,6 @@ func (p *Position) genCastles(moves []Move, n int) int {
 	return n
 }
 
-// returns a bitboard with all posible pawn moves
-func (p *Position) pseudoPawn(sq int, ep uint64) uint64 {
-	us := p.Stm
-	enemy := us ^ 1
-	front := sq + 8 - 16*us
-	//if the front square is occupied
-	if has(p.Occ, front) {
-		return pawn[us][sq] & (p.ColorOcc[enemy] | ep)
-	}
-	return (pawnPush[us][sq] & ^p.Occ) | pawn[us][sq]&(p.ColorOcc[enemy]|ep)
-}
-
-func (p *Position) genPawnMoves(sq int, epSq uint64, moves []Move, n int) int {
-	us := p.Stm
-	enemy := us ^ 1
-	mask := p.pseudoPawn(sq, epSq)
-
-	if has(p.kingBlockers, sq) {
-		mask &= p.allowed[sq]
-	}
-
-	ep := mask & epSq
-
-	mask &= p.checkMask
-
-	captures := mask & p.Occ
-
-	quiets := mask & ^(captures | ep)
-
-	promoCaptures := captures & promotionRanks
-	promoQuiets := quiets & promotionRanks
-
-	captures ^= promoCaptures
-	quiets ^= promoQuiets
-
-	for promoCaptures != 0 {
-		to := PopLSB(&promoCaptures)
-		moves[n] = NewMove(sq, to, PROMOQUEENX)
-		moves[n+1] = NewMove(sq, to, PROMOKNIGHTX)
-		moves[n+2] = NewMove(sq, to, PROMOROOKX)
-		moves[n+3] = NewMove(sq, to, PROMOBISHOPX)
-		n += 4
-	}
-
-	for promoQuiets != 0 {
-		to := PopLSB(&promoQuiets)
-
-		moves[n] = NewMove(sq, to, PROMOQUEEN)
-		moves[n+1] = NewMove(sq, to, PROMOKNIGHT)
-		moves[n+2] = NewMove(sq, to, PROMOROOK)
-		moves[n+3] = NewMove(sq, to, PROMOBISHOP)
-		n += 4
-	}
-
-	for captures != 0 {
-		to := PopLSB(&captures)
-		moves[n] = NewMove(sq, to, CAPTURE)
-		n++
-	}
-
-	for quiets != 0 {
-		to := PopLSB(&quiets)
-		if diff := to - sq; diff == 16 || diff == -16 {
-			moves[n] = NewMove(sq, to, DOUBLE)
-
-		} else {
-			moves[n] = NewMove(sq, to, QUIET)
-		}
-		n++
-
-	}
-
-	if ep != 0 {
-		to := bits.TrailingZeros64(ep)
-		capSq := to - 8 + 16*us // white: to-8, black: to+8
-		occ2 := p.Occ ^ (uint64(1)<<sq | uint64(1)<<capSq | ep)
-
-		//this breaks on "illegal" fen positions(double pushed pawn blocking check on oponent)
-		//add a bishop
-		if rookAttOcc(p.kings[us], occ2)&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN]) == 0 {
-			moves[n] = NewMove(sq, to, EP)
-			n++
-		}
-	}
-	return n
-}
-
 func (p *Position) Checkers(sq int, by int) uint64 {
 	return p.pseudoBishop(sq)&(p.PieceBB[by][BISHOP]|p.PieceBB[by][QUEEN]) |
 		p.pseudoRook(sq)&(p.PieceBB[by][ROOK]|p.PieceBB[by][QUEEN]) |
@@ -284,7 +197,7 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 
 	epMask := uint64(1) << p.epSquare
 
-	if us == int(WHITE) {
+	if us == WHITE {
 		singles = (P << 8) & empty
 		doubles = ((singles & rank3) << 8) & empty
 		capLeft = ((P & notA) << 7)
@@ -310,56 +223,10 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 	capLeft &= p.checkMask
 	capRight &= p.checkMask
 
-	for singles != 0 {
-		to := PopLSB(&singles)
-		var from int
-		if us == int(WHITE) {
-			from = to - 8
-		} else {
-			from = to + 8
-		}
-
-		// pin filter (allowed indexed by from)
-		if (p.kingBlockers>>from)&1 != 0 {
-			if (p.allowed[from]>>to)&1 == 0 {
-				continue
-			}
-		}
-		if (uint64(1)<<to)&promotionRanks != 0 {
-			moves[n] = NewMove(from, to, PROMOQUEEN)
-			moves[n+1] = NewMove(from, to, PROMOKNIGHT)
-			moves[n+2] = NewMove(from, to, PROMOROOK)
-			moves[n+3] = NewMove(from, to, PROMOBISHOP)
-			n += 4
-		} else {
-			moves[n] = NewMove(from, to, QUIET)
-			n++
-		}
-	}
-
-	for doubles != 0 {
-		to := PopLSB(&doubles)
-		var from int
-		if us == int(WHITE) {
-			from = to - 16
-		} else {
-			from = to + 16
-		}
-
-		// pin filter (allowed indexed by from)
-		if (p.kingBlockers>>from)&1 != 0 {
-			if (p.allowed[from]>>to)&1 == 0 {
-				continue
-			}
-		}
-		moves[n] = NewMove(from, to, DOUBLE)
-		n++
-	}
-
 	for capLeft != 0 {
 		to := PopLSB(&capLeft)
 		var from int
-		if us == int(WHITE) {
+		if us == WHITE {
 			from = to - 7
 		} else {
 			from = to + 9
@@ -386,17 +253,15 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 	for capRight != 0 {
 		to := PopLSB(&capRight)
 		var from int
-		if us == int(WHITE) {
+		if us == WHITE {
 			from = to - 9
 		} else {
 			from = to + 7
 		}
 
 		// pin filter (allowed indexed by from)
-		if (p.kingBlockers>>from)&1 != 0 {
-			if (p.allowed[from]>>to)&1 == 0 {
-				continue
-			}
+		if (p.kingBlockers>>from)&1 != 0 && (p.allowed[from]>>to)&1 == 0 {
+			continue
 		}
 		if (uint64(1)<<to)&promotionRanks != 0 {
 			moves[n] = NewMove(from, to, PROMOQUEENX)
@@ -414,7 +279,7 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 		to := bits.TrailingZeros64(epLeft)
 		var from int
 		var capsq int
-		if us == int(WHITE) {
+		if us == WHITE {
 			from = to - 7
 			capsq = to - 8
 		} else {
@@ -440,7 +305,7 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 		to := bits.TrailingZeros64(epRight)
 		var from int
 		var capsq int
-		if us == int(WHITE) {
+		if us == WHITE {
 			from = to - 9
 			capsq = to - 8
 		} else {
@@ -460,6 +325,48 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 				n++
 			}
 		}
+	}
+	for singles != 0 {
+		to := PopLSB(&singles)
+		var from int
+		if us == WHITE {
+			from = to - 8
+		} else {
+			from = to + 8
+		}
+
+		// pin filter (allowed indexed by from)
+		if (p.kingBlockers>>from)&1 != 0 && (p.allowed[from]>>to)&1 == 0 {
+			continue
+		}
+
+		if (uint64(1)<<to)&promotionRanks != 0 {
+			moves[n] = NewMove(from, to, PROMOQUEEN)
+			moves[n+1] = NewMove(from, to, PROMOKNIGHT)
+			moves[n+2] = NewMove(from, to, PROMOROOK)
+			moves[n+3] = NewMove(from, to, PROMOBISHOP)
+			n += 4
+		} else {
+			moves[n] = NewMove(from, to, QUIET)
+			n++
+		}
+	}
+
+	for doubles != 0 {
+		to := PopLSB(&doubles)
+		var from int
+		if us == WHITE {
+			from = to - 16
+		} else {
+			from = to + 16
+		}
+
+		// pin filter (allowed indexed by from)
+		if (p.kingBlockers>>from)&1 != 0 && (p.allowed[from]>>to)&1 == 0 {
+			continue
+		}
+		moves[n] = NewMove(from, to, DOUBLE)
+		n++
 	}
 	return n
 }

@@ -66,7 +66,7 @@ func (p *Position) Make(move Move) {
 		//after a double push or clearing the pawn after an ep capture
 		ep := to - 8 + 16*us
 		switch {
-		case IsEP(flags):
+		case flags == EP:
 			epMask := uint64(1) << ep
 			p.PieceBB[enemy][PAWN] ^= epMask
 			p.ColorOcc[enemy] ^= epMask
@@ -81,7 +81,7 @@ func (p *Position) Make(move Move) {
 			p.Board[to] = promo
 			//p.Key ^= zobristPiece[us][PAWN][to]
 			//p.Key ^= zobristPiece[us][promo][to]
-		case IsDP(flags):
+		case flags == DOUBLE:
 			p.epSquare = uint8(ep)
 			//p.Key ^= zobristEP[ep&7]
 		}

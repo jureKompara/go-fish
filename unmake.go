@@ -36,7 +36,7 @@ func (p *Position) Unmake(move Move) {
 		p.PieceBB[us][piece] ^= toMask
 	}
 
-	if IsEP(flags) {
+	if flags == EP {
 
 		behind := to - 8 + 16*us
 		behindMask := uint64(1) << behind

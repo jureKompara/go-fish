@@ -101,6 +101,8 @@ func genBishopMask(sq int) uint64 {
 	return out
 }
 
+// this is a little hacky but it works
+// this aproach breaks on semy legal fens
 func genCastleMask() {
 	for sq := range 64 {
 		switch sq {

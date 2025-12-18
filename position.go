@@ -1,19 +1,21 @@
 package main
 
-// PAWN=0...KING=5,EMPTY=6
+// KNIGHT=0...,PAWN=4,KING=5,EMPTY=6
+// NOTE: PAWN = 4 so the pieces can have 0-3 to so we dont have to
+// add 1 to them for promotions
 const (
-	PAWN uint8 = iota
-	KNIGHT
+	KNIGHT uint8 = iota
 	BISHOP
 	ROOK
 	QUEEN
+	PAWN
 	KING
 	EMPTY
 )
 
 const (
-	WHITE uint8 = 0
-	BLACK uint8 = 1
+	WHITE int = 0
+	BLACK int = 1
 )
 
 type Position struct {

@@ -40,14 +40,12 @@ func (m Move) To() int      { return int((m >> 6) & 0x3F) }
 func (m Move) Flags() uint8 { return uint8((m >> 12) & 0xF) }
 
 func IsCapture(flag uint8) bool { return flag&0x4 != 0 }
-func IsEP(flag uint8) bool      { return flag == EP }
-func IsDP(flag uint8) bool      { return flag == DOUBLE }
 func IsPromo(flag uint8) bool   { return flag > 0x7 }
 func IsCastle(flag uint8) bool  { return flag < 0x2 }
 
 // this only makes sense if the move is a promo
 func Promo(flag uint8) uint8 {
-	return flag&0x3 + KNIGHT
+	return flag & 0x3
 }
 
 // converts a move to UCI notation (e4e5 c7c8q)
