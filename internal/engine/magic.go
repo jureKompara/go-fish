@@ -9,6 +9,8 @@ import (
 var bishOff = [4]int{7, 9, -7, -9}
 var rookOff = [4]int{1, 8, -1, -8}
 
+var castleMask [64]uint8
+
 var bishopMagic = [64]uint64{17012709370506903680, 14255036331561329170,
 	16658890357802845336, 2857819918227750912,
 	8753045217836173600, 13096753873959258656,
@@ -120,6 +122,29 @@ func genRookMask(sq int) uint64 {
 	return out
 }
 
+// this is a little hacky but it works
+// this aproach breaks on semy legal fens
+func genCastleMask() {
+	for sq := range 64 {
+		switch sq {
+		case 7:
+			castleMask[sq] = 0b1110
+		case 0:
+			castleMask[sq] = 0b1101
+		case 63:
+			castleMask[sq] = 0b1011
+		case 56:
+			castleMask[sq] = 0b0111
+		case 4:
+			castleMask[sq] = 0b1100
+		case 60:
+			castleMask[sq] = 0b0011
+		default:
+			castleMask[sq] = 0b1111
+		}
+	}
+}
+
 // This function inits stuff that is required for magics
 // that is the rook and bishop masks and the apropriate
 // attack bitboard for every square and relevant occupany possible
@@ -129,6 +154,8 @@ func Init() {
 		maskR[i] = genRookMask(i)
 		maskB[i] = genBishopMask(i)
 	}
+	genCastleMask()
+	fill()
 
 	//The next two for loops generate all possible relevant occupancies
 	//for a square

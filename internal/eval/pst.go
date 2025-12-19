@@ -21,5 +21,5 @@ func Pst(p *engine.Position) int {
 			}
 		}
 	}
-	return score * (-2*p.ToMove + 1)
+	return score * (-2*p.Stm + 1)
 }

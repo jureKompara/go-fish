@@ -64,13 +64,13 @@ func handlePosition(stuff string, p *engine.Position) {
 			i++
 			for i < len(tokens) {
 				moves := p.Movebuff[p.Ply][:0]
-				p.GenMoves(&moves)
-				legal := moves
+				n := p.GenMoves(moves)
+				moves = moves[:n]
 				from, to, promo := parseUci(tokens[i])
-				//TODO: add a promo check that makes sense
-				fmt.Println(promo)
-				for _, l := range legal {
-					if l.From() == from && l.To() == to {
+
+				for _, l := range moves {
+					if l.From() == from && l.To() == to &&
+						(promo == engine.EMPTY || promo == int(engine.Promo(l.Flags()))) {
 						p.Make(l)
 						break
 					}

@@ -37,11 +37,10 @@ func main() {
 	}
 
 	if *perft {
-
 		fen := engine.Tests[0].FEN
 		pos := engine.FromFen(fen)
 		start := time.Now()
-		nodes := pos.Perft(*depth)
+		nodes := pos.Bulk(*depth)
 		elapsed := time.Since(start)
 		fmt.Printf("FEN: %s\n", fen)
 		fmt.Printf("depth: %d\n", *depth)
@@ -52,9 +51,10 @@ func main() {
 	} else if *debug {
 
 		start := time.Now()
-		engine.Test(*depth)
+		nodes := engine.Test(*depth)
 		elapsed := time.Since(start)
 		fmt.Printf("t: %s\n", elapsed)
+		fmt.Printf("N/s: %.2f MN/s\n", float64(nodes)/elapsed.Seconds()/1_000_000)
 
 	} else if *test {
 

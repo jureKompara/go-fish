@@ -2,11 +2,11 @@ package engine
 
 // PAWN=0...KING=5,EMPTY=6
 const (
-	PAWN = iota
-	KNIGHT
+	KNIGHT = iota
 	BISHOP
 	ROOK
 	QUEEN
+	PAWN
 	KING
 	EMPTY
 )
@@ -18,20 +18,23 @@ const (
 
 type Position struct {
 	PieceBB      [2][6]uint64 //per piece per color bitboards
-	ColorBB      [2]uint64    //per color bitboards
-	Occupancy    uint64       //is there any piece here bitboard
+	ColorOcc     [2]uint64    //per color bitboards
+	Occ          uint64       //is there any piece here bitboard
 	Board        [64]uint8    //keeps track of what piece is on Board[sq]
-	ToMove       int          //side to move 0=white 1=black
+	Stm          int          //side to move 0=white 1=black
 	castleRights uint8        //0b1111 4 bits denote the castling rights 0123-KQkq
 	epSquare     int          //denotes en passant square
 	fullMove     int          //fullmove counter
 	halfMove     int          //halfmove counter
 	kings        [2]int       //per color king position
 	//moveStack    [512]Move      //stack of move structs
-	stateStack [512]State     //stack of state structs
-	Ply        int            //the current Ply so we can index into the stacks
-	Movebuff   [512][256]Move //buffer for storing moves per Ply
-	Key        uint64         //incremental Zobrist key
+	stateStack   [512]State     //stack of state structs
+	Ply          int            //the current Ply so we can index into the stacks
+	Movebuff     [512][256]Move //buffer for storing moves per Ply
+	Hash         uint64         //incremental Zobrist key
+	kingBlockers uint64
+	allowed      [64]uint64
+	checkMask    uint64
 }
 
 var zobristPiece [2][6][64]uint64
@@ -45,17 +48,38 @@ func (p *Position) save(capture uint8) {
 		p.castleRights,
 		uint8(p.epSquare),
 		uint8(p.halfMove),
+		p.Hash,
 	}
 }
 
 func (p *Position) isAttacked(sq int, by int) bool {
-	if knight[sq]&p.PieceBB[by][KNIGHT] != 0 {
-		return true
-	}
+
 	if p.pseudoBishop(sq)&(p.PieceBB[by][BISHOP]|p.PieceBB[by][QUEEN]) != 0 {
 		return true
 	}
 	if p.pseudoRook(sq)&(p.PieceBB[by][ROOK]|p.PieceBB[by][QUEEN]) != 0 {
+		return true
+	}
+	if knight[sq]&p.PieceBB[by][KNIGHT] != 0 {
+		return true
+	}
+	if pawn[by^1][sq]&p.PieceBB[by][PAWN] != 0 {
+		return true
+	}
+	if king[sq]&p.PieceBB[by][KING] != 0 {
+		return true
+	}
+	return false
+}
+
+func (p *Position) isAttackedOcc(sq int, by int, occ uint64) bool {
+	if bishopAttOcc(sq, occ)&(p.PieceBB[by][BISHOP]|p.PieceBB[by][QUEEN]) != 0 {
+		return true
+	}
+	if rookAttOcc(sq, occ)&(p.PieceBB[by][ROOK]|p.PieceBB[by][QUEEN]) != 0 {
+		return true
+	}
+	if knight[sq]&p.PieceBB[by][KNIGHT] != 0 {
 		return true
 	}
 	if pawn[by^1][sq]&p.PieceBB[by][PAWN] != 0 {
@@ -72,34 +96,30 @@ func (p *Position) InCheck(stm int) bool {
 }
 
 func (p *Position) GenerateZobrist() {
-	p.Key = 0
+	p.Hash = 0
 	for color := range 2 {
 		for piece := PAWN; piece <= KING; piece++ {
 			bb := p.PieceBB[color][piece]
 			for bb != 0 {
 				sq := PopLSB(&bb)
-				p.Key ^= zobristPiece[color][piece][sq]
+				p.Hash ^= zobristPiece[color][piece][sq]
 			}
 		}
 	}
 
-	p.Key ^= zobristSide * uint64(p.ToMove)
+	p.Hash ^= zobristSide * uint64(p.Stm)
 
-	p.Key ^= zobristCastle[p.castleRights]
+	p.Hash ^= zobristCastle[p.castleRights]
 
 	if p.epSquare != 64 {
-		p.Key ^= zobristEP[p.epSquare&7]
+		p.Hash ^= zobristEP[p.epSquare&7]
 	}
 }
 
 func (p *Position) VerifyZobrist() {
-	old := p.Key
+	old := p.Hash
 	p.GenerateZobrist()
-	if p.Key != old {
+	if p.Hash != old {
 		panic("ZOBRIST DESYNC")
 	}
-}
-
-func (p *Position) PieceAt(sq int) uint8 {
-	return p.Board[sq]
 }

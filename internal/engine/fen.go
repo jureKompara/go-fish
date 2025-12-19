@@ -150,7 +150,7 @@ func FromFen(fen string) Position {
 	half_move, _ := strconv.ParseInt(hm, 10, 8)
 
 	//derived bit boards
-	for piece := PAWN; piece <= KING; piece++ {
+	for piece := 0; piece <= KING; piece++ {
 		allBB[WHITE] |= pieceBB[WHITE][piece]
 		allBB[BLACK] |= pieceBB[BLACK][piece]
 	}
@@ -158,10 +158,10 @@ func FromFen(fen string) Position {
 
 	var pos = Position{
 		PieceBB:      pieceBB,
-		ColorBB:      allBB,
-		Occupancy:    occupant,
+		ColorOcc:     allBB,
+		Occ:          occupant,
 		Board:        b,
-		ToMove:       toMove,
+		Stm:          toMove,
 		castleRights: castleRights,
 		epSquare:     epSquare,
 		fullMove:     int(full_move),

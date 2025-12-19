@@ -7,28 +7,19 @@ import (
 
 func Q(p *engine.Position, alpha, beta int) int {
 	qNodes++
-	us := p.ToMove
-
+	us := p.Stm
 	// ---------------------------
 	// Case 1: side to move is in check → full evasion search
 	// ---------------------------
 	if p.InCheck(us) {
 		best := -INF
 		moves := p.Movebuff[p.Ply][:0]
-		p.GenMoves(&moves)
-
-		foundLegal := false
+		n := p.GenMoves(moves)
+		moves = moves[:n]
 
 		for _, m := range moves {
 			p.Make(m)
-			if p.InCheck(us) {
-				p.Unmake(m)
-				continue
-			}
-			foundLegal = true
-
 			score := -Q(p, -beta, -alpha)
-
 			p.Unmake(m)
 
 			if score > best {
@@ -42,7 +33,7 @@ func Q(p *engine.Position, alpha, beta int) int {
 			}
 		}
 
-		if !foundLegal { // checkmate
+		if n == 0 { // checkmate
 			return -MATE + p.Ply
 		}
 		return best
@@ -67,17 +58,12 @@ func Q(p *engine.Position, alpha, beta int) int {
 
 	moves := p.Movebuff[p.Ply][:0]
 	//TODO: implement GenTactics!!!!!!!!!!!!!!!!
-	//p.GenTactics(&moves)
+	n := p.GenMoves(moves)
+	moves = moves[:n]
 
 	for _, m := range moves {
 		p.Make(m)
-		if p.InCheck(us) {
-			p.Unmake(m)
-			continue
-		}
-
 		score := -Q(p, -beta, -alpha)
-
 		p.Unmake(m)
 
 		if score >= beta {

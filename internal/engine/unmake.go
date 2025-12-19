@@ -1,89 +1,76 @@
 package engine
 
 func (p *Position) Unmake(move Move) {
-	state := p.stateStack[p.Ply-1]
-	from := move.From()
-	to := move.To()
-	piece := p.PieceAt(to)
-	flags := move.Flags()
+	p.Ply--
+	state := p.stateStack[p.Ply]
+	p.Hash = state.hash
+	p.castleRights = state.castleRights
+	p.epSquare = int(state.epSquare)
 
-	if IsPromo(flags) {
+	p.Stm ^= 1
+	us := p.Stm
+	enemy := us ^ 1
+
+	flags := move.Flags()
+	isPromo := IsPromo(flags)
+	to := move.To()
+	piece := p.Board[to]
+	if isPromo {
 		piece = PAWN
 	}
 
-	capture := state.capture
-
-	enemy := p.ToMove
-	us := enemy ^ 1
-
+	from := move.From()
+	fromMask := uint64(1) << from
 	//we always put the piece  on the from square
-	set(&(p.PieceBB[us][piece]), from)
-	set(&(p.ColorBB[us]), from)
-	set(&(p.Occupancy), from)
+	p.PieceBB[us][piece] ^= fromMask
+	p.ColorOcc[us] ^= fromMask
 	p.Board[from] = piece
 
+	toMask := uint64(1) << to
 	//we clear the to square
-	clear(&(p.PieceBB[us][piece]), to)
-	clear(&(p.ColorBB[us]), to)
-	clear(&(p.Occupancy), to)
+	p.ColorOcc[us] ^= toMask
 	p.Board[to] = EMPTY
+	p.Occ ^= toMask | fromMask
 
-	if IsPromo(flags) {
-		promo := Promo(flags)
-		clear(&(p.PieceBB[us][promo]), to)
+	if isPromo {
+		p.PieceBB[us][Promo(flags)] ^= toMask
+	} else {
+		p.PieceBB[us][piece] ^= toMask
 	}
 
-	//if its a cap we put the enemy piece back
-	if IsEP(flags) {
-		behind := to + 8*(1-2*enemy)
-		set(&(p.PieceBB[enemy][PAWN]), behind)
-		set(&(p.ColorBB[enemy]), behind)
-		set(&(p.Occupancy), behind)
+	if flags == EP {
+
+		behind := to - 8 + 16*us
+		behindMask := uint64(1) << behind
+		p.PieceBB[enemy][PAWN] ^= behindMask
+		p.ColorOcc[enemy] ^= behindMask
+		p.Occ ^= behindMask
 		p.Board[behind] = PAWN
+
 	} else if IsCapture(flags) {
-		set(&(p.PieceBB[enemy][capture]), to)
-		set(&(p.ColorBB[enemy]), to)
-		set(&(p.Occupancy), to)
+		capture := state.capture
+		p.PieceBB[enemy][capture] ^= toMask
+		p.ColorOcc[enemy] ^= toMask
+		p.Occ ^= toMask
 		p.Board[to] = capture
 	}
 
 	if piece == KING {
+
 		p.kings[us] = from
-		homeRank := us * 56
-		switch flags {
-		case KCASTLE:
-			set(&(p.PieceBB[us][ROOK]), 7+homeRank)
-			set(&(p.ColorBB[us]), 7+homeRank)
-			set(&(p.Occupancy), 7+homeRank)
-			p.Board[7+homeRank] = ROOK
-
-			clear(&(p.PieceBB[us][ROOK]), 5+homeRank)
-			clear(&(p.ColorBB[us]), 5+homeRank)
-			clear(&(p.Occupancy), 5+homeRank)
-			p.Board[5+homeRank] = EMPTY
-
-		case QCASTLE:
-			set(&(p.PieceBB[us][ROOK]), homeRank)
-			set(&(p.ColorBB[us]), homeRank)
-			set(&(p.Occupancy), homeRank)
-			p.Board[homeRank] = ROOK
-
-			clear(&(p.PieceBB[us][ROOK]), 3+homeRank)
-			clear(&(p.ColorBB[us]), 3+homeRank)
-			clear(&(p.Occupancy), 3+homeRank)
-			p.Board[3+homeRank] = EMPTY
+		if IsCastle(flags) {
+			homeRank := us * 56
+			t := homeRank + 5 - 2*int(flags)
+			tMask := uint64(1) << t
+			p.PieceBB[us][ROOK] ^= tMask
+			p.ColorOcc[us] ^= tMask
+			p.Board[t] = EMPTY
+			f := homeRank + 7*(1-int(flags))
+			fMask := uint64(1) << f
+			p.PieceBB[us][ROOK] ^= fMask
+			p.ColorOcc[us] ^= fMask
+			p.Board[f] = ROOK
+			p.Occ ^= tMask | fMask
 		}
 	}
-
-	p.castleRights = state.castleRights
-
-	p.epSquare = int(state.epSquare)
-
-	p.halfMove = int(state.halfmove)
-
-	if us == BLACK {
-		p.fullMove--
-	}
-	p.ToMove = us
-	p.Ply--
 }

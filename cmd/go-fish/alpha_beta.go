@@ -17,9 +17,9 @@ func AlphaBeta(p *engine.Position, alpha, beta, depth int) int {
 
 	//TT probe
 	TTProbe++
-	entry := engine.TT[p.Key&engine.IndexMask]
+	entry := engine.TT[p.Hash&engine.IndexMask]
 
-	if entry.Key == p.Key && entry.Depth >= uint8(depth) && true {
+	if entry.Key == p.Hash && entry.Depth >= uint8(depth) && true {
 
 		ttScore := loadScore(entry.Score, p.Ply)
 		TTHit++
@@ -48,16 +48,16 @@ func AlphaBeta(p *engine.Position, alpha, beta, depth int) int {
 		return Q(p, alpha, beta)
 	}
 	abNodes++
-	us := p.ToMove
+	us := p.Stm
 
 	best := -INF
 	var bestMove engine.Move
-	foundLegal := false
 
 	moves := p.Movebuff[p.Ply][:0]
-	p.GenMoves(&moves)
+	n := p.GenMoves(moves)
+	moves = moves[:n]
 
-	if p.Key == entry.Key {
+	if p.Hash == entry.Key {
 		hashMove := entry.BestMove
 		for i, m := range moves {
 			if m == hashMove {
@@ -69,33 +69,30 @@ func AlphaBeta(p *engine.Position, alpha, beta, depth int) int {
 
 	for _, m := range moves {
 		p.Make(m)
-		if !p.InCheck(us) {
-			foundLegal = true
-			score := -AlphaBeta(p, -beta, -alpha, depth-1)
-			p.Unmake(m)
 
-			if score > best {
-				best = score
-				bestMove = m
-			}
-			if score > alpha {
-				alpha = score
-			}
-			if alpha >= beta {
-				break
-			}
-		} else {
-			p.Unmake(m)
+		score := -AlphaBeta(p, -beta, -alpha, depth-1)
+		p.Unmake(m)
+
+		if score > best {
+			best = score
+			bestMove = m
+		}
+		if score > alpha {
+			alpha = score
+		}
+		if alpha >= beta {
+			break
 		}
 	}
 
-	if !foundLegal {
+	if n == 0 {
 		if p.InCheck(us) {
 			best = -MATE + p.Ply
 		} else {
 			best = 0
 		}
 	}
+
 	boundType := EXACT
 	if best <= originalAlpha {
 		boundType = UPPER
@@ -103,8 +100,8 @@ func AlphaBeta(p *engine.Position, alpha, beta, depth int) int {
 		boundType = LOWER
 	}
 
-	engine.TT[p.Key&engine.IndexMask] = engine.TTEntry{
-		Key:       p.Key,
+	engine.TT[p.Hash&engine.IndexMask] = engine.TTEntry{
+		Key:       p.Hash,
 		Depth:     uint8(depth),
 		Score:     storeScore(best, p.Ply),
 		BoundType: boundType,
