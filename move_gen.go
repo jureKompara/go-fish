@@ -27,14 +27,14 @@ func (p *Position) GenMoves(moves []Move) int {
 		p.checkMask = ^uint64(0) // default: no restriction
 		n = p.genCastles(moves, n)
 
-	case (checkers & (checkers - 1)) == 0:
+	case checkers&(checkers-1) == 0:
 		c := bits.TrailingZeros64(checkers)
-		// If checker is a slider, you can block OR capture
-		if has(p.PieceBB[enemy][BISHOP]|p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN], c) {
-			p.checkMask = line[ksq][c]
-		} else {
-			// Knight/pawn check: ONLY capture the checker
+		// Knight/pawn check: ONLY capture the checker
+		if has(p.PieceBB[enemy][PAWN]|p.PieceBB[enemy][KNIGHT], c) {
 			p.checkMask = uint64(1) << c
+
+		} else { // If checker is a slider, you can block OR capture
+			p.checkMask = line[ksq][c]
 		}
 
 	default:
@@ -56,32 +56,32 @@ func (p *Position) GenMoves(moves []Move) int {
 		}
 	}
 
-	//ep := uint64(1) << p.epSquare
-	bb := p.PieceBB[p.Stm][PAWN]
-
 	n = p.genPawnMoves2(moves, n)
 
-	bb = p.PieceBB[p.Stm][KNIGHT]
+	n = p.genKingMoves(ksq, king[ksq]&notUs, moves, n)
+	notUs &= p.checkMask
+
+	bb := p.PieceBB[us][KNIGHT]
 	for bb != 0 {
 		sq := PopLSB(&bb)
 		n = p.genGenericMoves(sq, knight[sq]&notUs, moves, n)
 	}
-	bb = p.PieceBB[p.Stm][BISHOP]
+	bb = p.PieceBB[us][BISHOP]
 	for bb != 0 {
 		sq := PopLSB(&bb)
 		n = p.genGenericMoves(sq, p.pseudoBishop(sq)&notUs, moves, n)
 	}
-	bb = p.PieceBB[p.Stm][ROOK]
+	bb = p.PieceBB[us][ROOK]
 	for bb != 0 {
 		sq := PopLSB(&bb)
 		n = p.genGenericMoves(sq, p.pseudoRook(sq)&notUs, moves, n)
 	}
-	bb = p.PieceBB[p.Stm][QUEEN]
+	bb = p.PieceBB[us][QUEEN]
 	for bb != 0 {
 		sq := PopLSB(&bb)
 		n = p.genGenericMoves(sq, (p.pseudoBishop(sq)|p.pseudoRook(sq))&notUs, moves, n)
 	}
-	return p.genKingMoves(ksq, king[ksq]&notUs, moves, n)
+	return n
 }
 
 func (p *Position) genKingMoves(sq int, mask uint64, moves []Move, n int) int {
@@ -163,7 +163,6 @@ func (p *Position) pseudoBishop(sq int) uint64 {
 // generates knight and slider moves becouse they have no special cases
 // pawns and kings have promotions and castling so they get their own generators
 func (p *Position) genGenericMoves(sq int, mask uint64, moves []Move, n int) int {
-	mask &= p.checkMask
 
 	if has(p.kingBlockers, sq) {
 		mask &= p.allowed[sq]
@@ -187,7 +186,7 @@ func (p *Position) genGenericMoves(sq int, mask uint64, moves []Move, n int) int
 
 func (p *Position) genPawnMoves2(moves []Move, n int) int {
 
-	var singles, doubles, capLeft, capRight, epLeft, epRight uint64
+	var singles, doubles, capLeft, capRight uint64
 
 	us := p.Stm
 	enemy := us ^ 1
@@ -202,90 +201,107 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 		doubles = ((singles & rank3) << 8) & empty
 		capLeft = ((P & notA) << 7)
 		capRight = ((P & notH) << 9)
-		epLeft = capLeft & epMask
-		epRight = capRight & epMask
-		capLeft &= enemyOcc
-		capRight &= enemyOcc
-
 	} else {
 		singles = (P >> 8) & empty
 		doubles = ((singles & rank6) >> 8) & empty
 		capLeft = ((P & notA) >> 9)
 		capRight = ((P & notH) >> 7)
-		epLeft = capLeft & epMask
-		epRight = capRight & epMask
-		capLeft &= enemyOcc
-		capRight &= enemyOcc
 	}
+
+	epLeft := capLeft & epMask
+	epRight := capRight & epMask
+
+	capLeft &= enemyOcc
+	capRight &= enemyOcc
 
 	singles &= p.checkMask
 	doubles &= p.checkMask
 	capLeft &= p.checkMask
 	capRight &= p.checkMask
 
-	for capLeft != 0 {
-		to := PopLSB(&capLeft)
-		var from int
-		if us == WHITE {
-			from = to - 7
-		} else {
-			from = to + 9
-		}
+	promo := singles & promotionRanks
+	promoLeft := capLeft & promotionRanks
+	promoRight := capRight & promotionRanks
 
-		// pin filter (allowed indexed by from)
-		if (p.kingBlockers>>from)&1 != 0 {
-			if (p.allowed[from]>>to)&1 == 0 {
-				continue
-			}
-		}
-		if (uint64(1)<<to)&promotionRanks != 0 {
-			moves[n] = NewMove(from, to, PROMOQUEENX)
-			moves[n+1] = NewMove(from, to, PROMOKNIGHTX)
-			moves[n+2] = NewMove(from, to, PROMOROOKX)
-			moves[n+3] = NewMove(from, to, PROMOBISHOPX)
-			n += 4
-		} else {
-			moves[n] = NewMove(from, to, CAPTURE)
-			n++
-		}
-	}
+	singles ^= promo
+	capLeft ^= promoLeft
+	capRight ^= promoRight
 
-	for capRight != 0 {
-		to := PopLSB(&capRight)
-		var from int
-		if us == WHITE {
-			from = to - 9
-		} else {
-			from = to + 7
-		}
+	blackOffset := 16 * us
+
+	for promoLeft != 0 {
+		to := PopLSB(&promoLeft)
+		from := to - 7 + blackOffset
 
 		// pin filter (allowed indexed by from)
 		if (p.kingBlockers>>from)&1 != 0 && (p.allowed[from]>>to)&1 == 0 {
 			continue
 		}
-		if (uint64(1)<<to)&promotionRanks != 0 {
-			moves[n] = NewMove(from, to, PROMOQUEENX)
-			moves[n+1] = NewMove(from, to, PROMOKNIGHTX)
-			moves[n+2] = NewMove(from, to, PROMOROOKX)
-			moves[n+3] = NewMove(from, to, PROMOBISHOPX)
-			n += 4
-		} else {
-			moves[n] = NewMove(from, to, CAPTURE)
-			n++
+		moves[n] = NewMove(from, to, PROMOQUEENX)
+		moves[n+1] = NewMove(from, to, PROMOKNIGHTX)
+		moves[n+2] = NewMove(from, to, PROMOROOKX)
+		moves[n+3] = NewMove(from, to, PROMOBISHOPX)
+		n += 4
+	}
+
+	for promoRight != 0 {
+		to := PopLSB(&promoRight)
+		from := to - 9 + blackOffset
+
+		// pin filter (allowed indexed by from)
+		if (p.kingBlockers>>from)&1 != 0 && (p.allowed[from]>>to)&1 == 0 {
+			continue
 		}
+		moves[n] = NewMove(from, to, PROMOQUEENX)
+		moves[n+1] = NewMove(from, to, PROMOKNIGHTX)
+		moves[n+2] = NewMove(from, to, PROMOROOKX)
+		moves[n+3] = NewMove(from, to, PROMOBISHOPX)
+		n += 4
+	}
+
+	for promo != 0 {
+		to := PopLSB(&promo)
+		from := to - 8 + blackOffset
+
+		// pin filter (allowed indexed by from)
+		if (p.kingBlockers>>from)&1 != 0 && (p.allowed[from]>>to)&1 == 0 {
+			continue
+		}
+		moves[n] = NewMove(from, to, PROMOQUEEN)
+		moves[n+1] = NewMove(from, to, PROMOKNIGHT)
+		moves[n+2] = NewMove(from, to, PROMOROOK)
+		moves[n+3] = NewMove(from, to, PROMOBISHOP)
+		n += 4
+	}
+
+	for capLeft != 0 {
+		to := PopLSB(&capLeft)
+		from := to - 7 + blackOffset
+
+		// pin filter (allowed indexed by from)
+		if (p.kingBlockers>>from)&1 != 0 && (p.allowed[from]>>to)&1 == 0 {
+			continue
+		}
+		moves[n] = NewMove(from, to, CAPTURE)
+		n++
+	}
+
+	for capRight != 0 {
+		to := PopLSB(&capRight)
+		from := to - 9 + blackOffset
+
+		// pin filter
+		if (p.kingBlockers>>from)&1 != 0 && (p.allowed[from]>>to)&1 == 0 {
+			continue
+		}
+		moves[n] = NewMove(from, to, CAPTURE)
+		n++
 	}
 
 	if epLeft != 0 {
 		to := bits.TrailingZeros64(epLeft)
-		var from int
-		var capsq int
-		if us == WHITE {
-			from = to - 7
-			capsq = to - 8
-		} else {
-			from = to + 9
-			capsq = to + 8
-		}
+		from := to - 7 + blackOffset
+		capsq := from - 1
 
 		// pin filter
 		if (p.kingBlockers>>from)&1 == 0 || (p.allowed[from]>>to)&1 != 0 {
@@ -303,15 +319,8 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 
 	if epRight != 0 {
 		to := bits.TrailingZeros64(epRight)
-		var from int
-		var capsq int
-		if us == WHITE {
-			from = to - 9
-			capsq = to - 8
-		} else {
-			from = to + 7
-			capsq = to + 8
-		}
+		from := to - 9 + blackOffset
+		capsq := from + 1
 
 		// pin filter
 		if (p.kingBlockers>>from)&1 == 0 || (p.allowed[from]>>to)&1 != 0 {
@@ -328,40 +337,20 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 	}
 	for singles != 0 {
 		to := PopLSB(&singles)
-		var from int
-		if us == WHITE {
-			from = to - 8
-		} else {
-			from = to + 8
-		}
-
-		// pin filter (allowed indexed by from)
+		from := to - 8 + blackOffset
+		// pin filter
 		if (p.kingBlockers>>from)&1 != 0 && (p.allowed[from]>>to)&1 == 0 {
 			continue
 		}
-
-		if (uint64(1)<<to)&promotionRanks != 0 {
-			moves[n] = NewMove(from, to, PROMOQUEEN)
-			moves[n+1] = NewMove(from, to, PROMOKNIGHT)
-			moves[n+2] = NewMove(from, to, PROMOROOK)
-			moves[n+3] = NewMove(from, to, PROMOBISHOP)
-			n += 4
-		} else {
-			moves[n] = NewMove(from, to, QUIET)
-			n++
-		}
+		moves[n] = NewMove(from, to, QUIET)
+		n++
 	}
 
 	for doubles != 0 {
 		to := PopLSB(&doubles)
-		var from int
-		if us == WHITE {
-			from = to - 16
-		} else {
-			from = to + 16
-		}
+		from := to - 16 + 2*blackOffset
 
-		// pin filter (allowed indexed by from)
+		// pin filter
 		if (p.kingBlockers>>from)&1 != 0 && (p.allowed[from]>>to)&1 == 0 {
 			continue
 		}

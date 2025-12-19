@@ -10,7 +10,6 @@ import (
 
 func main() {
 
-	//init stuff
 	Init()
 
 	debug := flag.Bool("debug", false, "runs perft on six positions from the wiki")
@@ -31,8 +30,7 @@ func main() {
 	}
 
 	if *perft {
-
-		fen := Tests[1].FEN
+		fen := Tests[0].FEN
 		pos := FromFen(fen)
 		start := time.Now()
 		var nodes uint64
@@ -51,12 +49,12 @@ func main() {
 	} else if *debug {
 
 		start := time.Now()
-		Test(*depth)
+		nodes := Test(*depth)
 		elapsed := time.Since(start)
 		fmt.Printf("t: %s\n", elapsed)
+		fmt.Printf("N/s: %.2f MN/s\n", float64(nodes)/elapsed.Seconds()/1_000_000)
 
 	} else if *divide {
-
 		fen := Tests[0].FEN
 		pos := FromFen(fen)
 		nodes := pos.PerftDivide(*depth)
@@ -64,6 +62,5 @@ func main() {
 		fmt.Printf("depth: %d\n", *depth)
 		fmt.Printf("FEN: %s\n", fen)
 		fmt.Printf("N: %d\n", nodes)
-
 	}
 }

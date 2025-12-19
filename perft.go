@@ -6,10 +6,11 @@ import (
 	"github.com/fatih/color"
 )
 
-func Test(maxDepth int) {
+func Test(maxDepth int) uint64 {
 	ok := color.New(color.Bold, color.FgGreen)
 	err := color.New(color.Bold, color.FgRed)
 
+	total := uint64(0)
 	for _, test := range Tests {
 		fmt.Println(test.FEN)
 		pos := FromFen(test.FEN)
@@ -18,6 +19,7 @@ func Test(maxDepth int) {
 				break
 			}
 			nodes := pos.Bulk(d)
+			total += nodes
 			res := test.result[d]
 			if nodes != res {
 				err.Printf("%d: Err-%d Expected: %d\n", d, nodes, res)
@@ -25,8 +27,8 @@ func Test(maxDepth int) {
 				ok.Printf("%d: OK-%d\n", d, nodes)
 			}
 		}
-		fmt.Println("--------------------------------")
 	}
+	return total
 }
 
 func (p *Position) Perft(depth int) uint64 {
@@ -45,14 +47,13 @@ func (p *Position) Perft(depth int) uint64 {
 	return nodes
 }
 
-// will break on Bulk(0)
 func (p *Position) Bulk(depth int) uint64 {
 	moves := p.Movebuff[p.Ply][:]
 	n := p.GenMoves(moves)
 	moves = moves[:n]
 	// base case depth==1 we just count legal moves
-	if depth == 1 {
-		return uint64(len(moves))
+	if depth <= 1 {
+		return uint64(n)
 	}
 	nodes := uint64(0)
 	for _, move := range moves {
@@ -83,10 +84,7 @@ func (p *Position) PerftDivide(depth int) uint64 {
 		snapPieces := p.PieceBB
 		p.Make(move)
 		n := uint64(0)
-		if p.isAttacked(p.kings[p.Stm^1], p.Stm) {
-			panic("King in check after Make()")
-		}
-		n = p.Perft(depth - 1)
+		n = p.Bulk(depth - 1)
 		fmt.Printf("%s: %d\n", move.Uci(), n)
 		nodes += n
 		p.Unmake(move)
