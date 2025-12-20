@@ -2,6 +2,7 @@ package main
 
 import (
 	"go-fish/internal/engine"
+	"go-fish/internal/eval"
 )
 
 var abNodes uint64
@@ -13,14 +14,13 @@ const (
 	UPPER
 )
 
-func AlphaBeta(p *engine.Position, alpha, beta, depth int) int {
+func AB(p *engine.Position, alpha, beta, depth int) int {
 
 	//TT probe
 	TTProbe++
 	entry := engine.TT[p.Hash&engine.IndexMask]
 
-	if entry.Key == p.Hash && entry.Depth >= uint8(depth) && true {
-
+	if entry.Hash == p.Hash && entry.Depth >= uint8(depth) {
 		ttScore := loadScore(entry.Score, p.Ply)
 		TTHit++
 		switch entry.BoundType {
@@ -45,19 +45,18 @@ func AlphaBeta(p *engine.Position, alpha, beta, depth int) int {
 
 	//we start quiesence at leaf nodes
 	if depth == 0 {
-		return Q(p, alpha, beta)
+		return eval.Pst(p)
 	}
 	abNodes++
-	us := p.Stm
 
 	best := -INF
 	var bestMove engine.Move
 
-	moves := p.Movebuff[p.Ply][:0]
+	moves := p.Movebuff[p.Ply][:]
 	n := p.GenMoves(moves)
 	moves = moves[:n]
 
-	if p.Hash == entry.Key {
+	if p.Hash == entry.Hash {
 		hashMove := entry.BestMove
 		for i, m := range moves {
 			if m == hashMove {
@@ -69,8 +68,7 @@ func AlphaBeta(p *engine.Position, alpha, beta, depth int) int {
 
 	for _, m := range moves {
 		p.Make(m)
-
-		score := -AlphaBeta(p, -beta, -alpha, depth-1)
+		score := -AB(p, -beta, -alpha, depth-1)
 		p.Unmake(m)
 
 		if score > best {
@@ -86,7 +84,7 @@ func AlphaBeta(p *engine.Position, alpha, beta, depth int) int {
 	}
 
 	if n == 0 {
-		if p.InCheck(us) {
+		if p.InCheck() {
 			best = -MATE + p.Ply
 		} else {
 			best = 0
@@ -101,7 +99,7 @@ func AlphaBeta(p *engine.Position, alpha, beta, depth int) int {
 	}
 
 	engine.TT[p.Hash&engine.IndexMask] = engine.TTEntry{
-		Key:       p.Hash,
+		Hash:      p.Hash,
 		Depth:     uint8(depth),
 		Score:     storeScore(best, p.Ply),
 		BoundType: boundType,

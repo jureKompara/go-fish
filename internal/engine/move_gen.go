@@ -56,7 +56,7 @@ func (p *Position) GenMoves(moves []Move) int {
 		}
 	}
 
-	n = p.genPawnMoves2(moves, n)
+	n = p.genPawnMoves(moves, n)
 
 	n = p.genKingMoves(ksq, king[ksq]&notUs, moves, n)
 	notUs &= p.checkMask
@@ -184,7 +184,7 @@ func (p *Position) genGenericMoves(sq int, mask uint64, moves []Move, n int) int
 	return n
 }
 
-func (p *Position) genPawnMoves2(moves []Move, n int) int {
+func (p *Position) genPawnMoves(moves []Move, n int) int {
 
 	var singles, doubles, capLeft, capRight uint64
 

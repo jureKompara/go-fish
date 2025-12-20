@@ -91,14 +91,14 @@ func (p *Position) isAttackedOcc(sq int, by int, occ uint64) bool {
 	return false
 }
 
-func (p *Position) InCheck(stm int) bool {
-	return p.isAttacked(p.kings[stm], stm^1)
+func (p *Position) InCheck() bool {
+	return p.isAttacked(p.kings[p.Stm], p.Stm^1)
 }
 
 func (p *Position) GenerateZobrist() {
 	p.Hash = 0
 	for color := range 2 {
-		for piece := PAWN; piece <= KING; piece++ {
+		for piece := 0; piece <= KING; piece++ {
 			bb := p.PieceBB[color][piece]
 			for bb != 0 {
 				sq := PopLSB(&bb)

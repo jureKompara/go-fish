@@ -32,11 +32,11 @@ func handleUci(req string, p *engine.Position) {
 			TTProbe = 0
 			start := time.Now()
 
-			fmt.Println("bestmove", RootSearch(p, 6).Uci())
+			fmt.Println("bestmove", RootSearch(p, 7).Uci())
 
-			fmt.Println("ttCutoffs: ", ttCutoffs)
-			fmt.Println("ttHits: ", TTHit)
-			fmt.Println("ttProbes: ", TTProbe)
+			//fmt.Println("ttCutoffs: ", ttCutoffs)
+			//fmt.Println("ttHits: ", TTHit)
+			//fmt.Println("ttProbes: ", TTProbe)
 
 			elapsed := time.Since(start).Seconds()
 			nps := int(float64(abNodes+qNodes) / elapsed)
@@ -63,7 +63,7 @@ func handlePosition(stuff string, p *engine.Position) {
 		case "moves":
 			i++
 			for i < len(tokens) {
-				moves := p.Movebuff[p.Ply][:0]
+				moves := p.Movebuff[p.Ply][:]
 				n := p.GenMoves(moves)
 				moves = moves[:n]
 				from, to, promo := parseUci(tokens[i])

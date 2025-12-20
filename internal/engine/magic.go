@@ -215,7 +215,7 @@ func Init() {
 	}
 	//zobrsit numbers init
 	for color := range 2 {
-		for piece := PAWN; piece <= KING; piece++ {
+		for piece := 0; piece <= KING; piece++ {
 			for sq := range 64 {
 				zobristPiece[color][piece][sq] = rand.Uint64()
 			}

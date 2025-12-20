@@ -2,7 +2,6 @@ package main
 
 import (
 	"go-fish/internal/engine"
-	"sort"
 )
 
 const INF = 1000000000
@@ -10,41 +9,31 @@ const MATE = 1000000
 
 func RootSearch(p *engine.Position, depth int) engine.Move {
 	bestScore := -INF
-	var bestMove engine.Move
 
-	moves := p.Movebuff[p.Ply][:0]
-	scores := [256]int{}
+	moves := p.Movebuff[p.Ply][:]
 	n := p.GenMoves(moves)
 	moves = moves[:n]
 
-	for i, m := range moves {
-		p.Make(m)
-		score := -AlphaBeta(p, -INF, INF, 0)
-		scores[i] = score
-		p.Unmake(m)
-		if score > bestScore {
-			bestScore = score
-			bestMove = m
-		}
+	if n == 0 {
+		return 0
 	}
 
-	for d := 1; d < depth; d++ {
+	bestIdx := 0
+	for d := range depth {
 		bestScore = -INF
-		sort.Slice(moves, func(i, j int) bool {
-			return scores[i] > scores[j]
-		})
+		bestIdx = 0
 
 		for i, m := range moves {
 			p.Make(m)
-
-			score := -AlphaBeta(p, -INF, INF, d)
-			scores[i] = score
+			score := -AB(p, -INF, INF, d)
 			p.Unmake(m)
 			if score > bestScore {
 				bestScore = score
-				bestMove = m
+				bestIdx = i
 			}
 		}
+		moves[0], moves[bestIdx] = moves[bestIdx], moves[0]
+		//now it again coresponds because it has been overwriten
 	}
-	return bestMove
+	return moves[0]
 }

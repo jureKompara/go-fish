@@ -7,13 +7,12 @@ import (
 
 func Q(p *engine.Position, alpha, beta int) int {
 	qNodes++
-	us := p.Stm
 	// ---------------------------
 	// Case 1: side to move is in check → full evasion search
 	// ---------------------------
-	if p.InCheck(us) {
+	if p.InCheck() {
 		best := -INF
-		moves := p.Movebuff[p.Ply][:0]
+		moves := p.Movebuff[p.Ply][:]
 		n := p.GenMoves(moves)
 		moves = moves[:n]
 
@@ -56,7 +55,7 @@ func Q(p *engine.Position, alpha, beta int) int {
 		alpha = staticEval
 	}
 
-	moves := p.Movebuff[p.Ply][:0]
+	moves := p.Movebuff[p.Ply][:]
 	//TODO: implement GenTactics!!!!!!!!!!!!!!!!
 	n := p.GenMoves(moves)
 	moves = moves[:n]

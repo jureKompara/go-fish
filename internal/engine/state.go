@@ -7,5 +7,4 @@ type State struct {
 	epSquare     uint8
 	halfmove     uint8
 	hash         uint64
-	//add hash and other stuff that is nice to cache here
 }
