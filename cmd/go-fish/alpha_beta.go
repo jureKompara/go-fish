@@ -2,7 +2,6 @@ package main
 
 import (
 	"go-fish/internal/engine"
-	"go-fish/internal/eval"
 )
 
 var abNodes uint64
@@ -45,7 +44,7 @@ func AB(p *engine.Position, alpha, beta, depth int) int {
 
 	//we start quiesence at leaf nodes
 	if depth == 0 {
-		return eval.Pst(p)
+		return Q(p, alpha, beta, QDEPTH)
 	}
 	abNodes++
 

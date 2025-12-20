@@ -57,7 +57,7 @@ func (p *Position) Unmake(move Move) {
 
 	if piece == KING {
 
-		p.kings[us] = from
+		p.Kings[us] = from
 		if IsCastle(flags) {
 			homeRank := us * 56
 			t := homeRank + 5 - 2*int(flags)

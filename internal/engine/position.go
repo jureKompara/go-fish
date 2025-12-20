@@ -26,7 +26,7 @@ type Position struct {
 	epSquare     int          //denotes en passant square
 	fullMove     int          //fullmove counter
 	halfMove     int          //halfmove counter
-	kings        [2]int       //per color king position
+	Kings        [2]int       //per color king position
 	//moveStack    [512]Move      //stack of move structs
 	stateStack   [512]State     //stack of state structs
 	Ply          int            //the current Ply so we can index into the stacks
@@ -92,7 +92,7 @@ func (p *Position) isAttackedOcc(sq int, by int, occ uint64) bool {
 }
 
 func (p *Position) InCheck() bool {
-	return p.isAttacked(p.kings[p.Stm], p.Stm^1)
+	return p.isAttacked(p.Kings[p.Stm], p.Stm^1)
 }
 
 func (p *Position) GenerateZobrist() {

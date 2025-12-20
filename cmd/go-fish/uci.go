@@ -32,7 +32,7 @@ func handleUci(req string, p *engine.Position) {
 			TTProbe = 0
 			start := time.Now()
 
-			fmt.Println("bestmove", RootSearch(p, 7).Uci())
+			fmt.Println("bestmove", RootSearch(p, 6).Uci())
 
 			//fmt.Println("ttCutoffs: ", ttCutoffs)
 			//fmt.Println("ttHits: ", TTHit)

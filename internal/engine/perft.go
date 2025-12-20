@@ -82,7 +82,7 @@ func (p *Position) PerftDivide(depth int) uint64 {
 		snapTM := p.Stm
 		snapAll := p.ColorOcc
 		snapOcc := p.Occ
-		snapKings := p.kings
+		snapKings := p.Kings
 		snapPieces := p.PieceBB
 		snapKey := p.Hash
 		p.Make(move)
@@ -96,7 +96,7 @@ func (p *Position) PerftDivide(depth int) uint64 {
 			p.Stm != snapTM ||
 			p.ColorOcc != snapAll ||
 			p.Occ != snapOcc ||
-			p.kings != snapKings ||
+			p.Kings != snapKings ||
 			p.PieceBB != snapPieces ||
 			p.Hash != snapKey {
 			panic("state mismatch")

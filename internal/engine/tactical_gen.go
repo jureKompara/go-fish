@@ -8,8 +8,8 @@ import (
 func (p *Position) GenTactics(moves []Move) int {
 	us := p.Stm
 	enemy := us ^ 1
-	ksq := p.kings[us]
-	them := ^p.ColorOcc[us]
+	ksq := p.Kings[us]
+	them := p.ColorOcc[enemy]
 
 	n := 0
 
@@ -193,7 +193,7 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 			capsqMask := uint64(1) << capsq
 			occ2 := p.Occ ^ (capsqMask | uint64(1)<<from | uint64(1)<<to)
 			//preven check filter
-			if rookAttOcc(p.kings[us], occ2)&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN]) == 0 {
+			if rookAttOcc(p.Kings[us], occ2)&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN]) == 0 {
 				moves[n] = NewMove(from, to, EP)
 				n++
 			}
@@ -210,7 +210,7 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 			capsqMask := uint64(1) << capsq
 			occ2 := p.Occ ^ (capsqMask | uint64(1)<<from | uint64(1)<<to)
 
-			if rookAttOcc(p.kings[us], occ2)&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN]) == 0 {
+			if rookAttOcc(p.Kings[us], occ2)&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN]) == 0 {
 				moves[n] = NewMove(from, to, EP)
 				n++
 			}

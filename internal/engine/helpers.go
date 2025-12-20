@@ -23,7 +23,7 @@ func PopLSB(bb *uint64) int {
 }
 
 // prints a bitboard as a chessboard
-func PrintBB(bb uint64, sq int) {
+func PrintBB(bb uint64) {
 	for rank := 7; rank >= 0; rank-- {
 		for file := range 8 {
 			if has(bb, rank*8+file) {
@@ -110,7 +110,7 @@ func Line(sq1, sq2 int) uint64 {
 	if df < 0 {
 		df = -1
 	}
-
+	sq1 += df + dr*8
 	for sq1 != sq2 {
 		out |= 1 << sq1
 		sq1 += df + dr*8

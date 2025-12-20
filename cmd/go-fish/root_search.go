@@ -22,7 +22,6 @@ func RootSearch(p *engine.Position, depth int) engine.Move {
 	for d := range depth {
 		bestScore = -INF
 		bestIdx = 0
-
 		for i, m := range moves {
 			p.Make(m)
 			score := -AB(p, -INF, INF, d)
@@ -33,7 +32,6 @@ func RootSearch(p *engine.Position, depth int) engine.Move {
 			}
 		}
 		moves[0], moves[bestIdx] = moves[bestIdx], moves[0]
-		//now it again coresponds because it has been overwriten
 	}
 	return moves[0]
 }

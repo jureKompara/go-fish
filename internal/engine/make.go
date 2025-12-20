@@ -37,7 +37,7 @@ func (p *Position) Make(move Move) {
 
 	flags := move.Flags()
 	if piece == KING {
-		p.kings[us] = to
+		p.Kings[us] = to
 		if IsCastle(flags) {
 			homeRank := us * 56
 			t := homeRank + 5 + int(flags)*-2

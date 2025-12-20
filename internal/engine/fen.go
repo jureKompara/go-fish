@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const starting_pos string = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+const STARTPOS string = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 type TestCase struct {
 	FEN    string
@@ -14,7 +14,7 @@ type TestCase struct {
 
 // fens for perft from the chess programming wiki
 var Tests = []TestCase{
-	{FEN: starting_pos,
+	{FEN: STARTPOS,
 		result: []uint64{1, 20, 400, 8_902, 197_281, 4_865_609, 119_060_324, 3_195_901_860, 84_998_978_956},
 	},
 	{FEN: "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
@@ -63,7 +63,7 @@ var _pieceToChar = [7]int{
 }
 
 func StartPos() Position {
-	return FromFen(starting_pos)
+	return FromFen(STARTPOS)
 }
 
 func FromFen(fen string) Position {
@@ -166,7 +166,7 @@ func FromFen(fen string) Position {
 		epSquare:     epSquare,
 		fullMove:     int(full_move),
 		halfMove:     int(half_move),
-		kings:        kings,
+		Kings:        kings,
 	}
 	pos.GenerateZobrist()
 	return pos

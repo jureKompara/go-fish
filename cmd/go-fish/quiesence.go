@@ -5,20 +5,30 @@ import (
 	"go-fish/internal/eval"
 )
 
-func Q(p *engine.Position, alpha, beta int) int {
+const QDEPTH = 4
+
+func Q(p *engine.Position, alpha, beta, qDepth int) int {
+
+	//max qDepth-> static eval
+	if qDepth == 0 {
+		return eval.Pst(p)
+	}
 	qNodes++
-	// ---------------------------
-	// Case 1: side to move is in check → full evasion search
-	// ---------------------------
-	if p.InCheck() {
+
+	checkers := p.Checkers(p.Kings[p.Stm], p.Stm^1)
+
+	if checkers != 0 {
+		// ---------------------------
+		// Case 1: side to move is in check → full evasion search
+		// ---------------------------
 		best := -INF
 		moves := p.Movebuff[p.Ply][:]
-		n := p.GenMoves(moves)
+		n := p.GenEvasions(moves, checkers)
 		moves = moves[:n]
 
 		for _, m := range moves {
 			p.Make(m)
-			score := -Q(p, -beta, -alpha)
+			score := -Q(p, -beta, -alpha, qDepth-1)
 			p.Unmake(m)
 
 			if score > best {
@@ -32,14 +42,10 @@ func Q(p *engine.Position, alpha, beta int) int {
 			}
 		}
 
-		if n == 0 { // checkmate
+		if n <= 0 { // checkmate
 			return -MATE + p.Ply
 		}
 		return best
-	}
-
-	if p.Ply >= 8 {
-		return eval.Pst(p)
 	}
 	// ---------------------------
 	// Case 2: not in check → normal quiescence
@@ -56,13 +62,12 @@ func Q(p *engine.Position, alpha, beta int) int {
 	}
 
 	moves := p.Movebuff[p.Ply][:]
-	//TODO: implement GenTactics!!!!!!!!!!!!!!!!
-	n := p.GenMoves(moves)
+	n := p.GenTactics(moves)
 	moves = moves[:n]
 
 	for _, m := range moves {
 		p.Make(m)
-		score := -Q(p, -beta, -alpha)
+		score := -Q(p, -beta, -alpha, qDepth-1)
 		p.Unmake(m)
 
 		if score >= beta {
