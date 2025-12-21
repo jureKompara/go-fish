@@ -2,14 +2,14 @@ package eval
 
 import "go-fish/internal/engine"
 
-var points = [6]int{310, 320, 500, 900, 100, 0}
+var points = [6]int32{310, 320, 500, 900, 100, 0}
 
-var PSQ [2][6][64]int
+var PSQ [2][6][64]int32
 
 // returns the evaluation of the position from side to move POV
 // counts material and PST to get the eval
-func Pst(p *engine.Position) int {
-	score := 0
+func Pst(p *engine.Position) int32 {
+	var score int32 = 0
 	for piece := 0; piece <= engine.KING; piece++ {
 		bb := p.PieceBB[engine.WHITE][piece]
 		for bb != 0 {
@@ -20,7 +20,7 @@ func Pst(p *engine.Position) int {
 			score -= PSQ[engine.BLACK][piece][engine.PopLSB(&bb)]
 		}
 	}
-	return score * (1 - 2*p.Stm)
+	return score * int32(1-2*p.Stm)
 }
 
 func init() {

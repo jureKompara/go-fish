@@ -119,10 +119,8 @@ func (p *Position) GenerateZobrist() {
 	}
 }
 
-func (p *Position) VerifyZobrist() {
+func (p *Position) VerifyZobrist() bool {
 	old := p.Hash
 	p.GenerateZobrist()
-	if p.Hash != old {
-		panic("ZOBRIST DESYNC")
-	}
+	return p.Hash == old
 }

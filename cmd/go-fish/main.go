@@ -16,9 +16,6 @@ var ttCutoffs = 0
 
 func main() {
 
-	//init stuff
-	engine.Init()
-
 	debug := flag.Bool("debug", false, "runs perft on six positions from the wiki")
 	prof := flag.Bool("prof", false, "enable profiling")
 	perft := flag.Bool("perft", false, "run perft")

@@ -47,19 +47,22 @@ func (p *Position) Make(move Move) {
 		p.Kings[us] = to
 		if IsCastle(flags) {
 			homeRank := us * 56
-			t := homeRank + 5 + int(flags)*-2
+
+			t := homeRank + 5 - 2*int(flags)
 			tMask := uint64(1) << t
 			p.PieceBB[us][ROOK] ^= tMask
 			p.ColorOcc[us] ^= tMask
 			p.Board[t] = ROOK
+			p.Hash ^= zobristPiece[us][ROOK][t]
+
 			f := homeRank + 7*(1-int(flags))
 			fMask := uint64(1) << f
 			p.PieceBB[us][ROOK] ^= fMask
 			p.ColorOcc[us] ^= fMask
 			p.Board[f] = EMPTY
+			p.Hash ^= zobristPiece[us][ROOK][f]
+
 			p.Occ ^= fMask | tMask
-			p.Hash ^= zobristPiece[us][ROOK][7+homeRank]
-			p.Hash ^= zobristPiece[us][ROOK][5+homeRank]
 		}
 	}
 

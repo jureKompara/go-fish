@@ -18,21 +18,31 @@ var testFens = []string{
 }
 
 func Test(depth *int) {
+	fmt.Println("depth: ", *depth)
 	for _, fen := range testFens {
-		//we create the board state
 		p := engine.FromFen(fen)
 
 		abNodes = 0
 		qNodes = 0
+		ttCutoffs = 0
+		TTHit = 0
+		TTProbe = 0
+
 		start := time.Now()
 		move := RootSearch(&p, *depth).Uci()
-		elapsed := time.Since(start).Seconds()
-		nps := int(float64(abNodes+qNodes) / elapsed)
+		elapsed := time.Since(start)
 
-		fmt.Println(*depth)
-		fmt.Println("time: ", elapsed, "s")
-		fmt.Println(fen, "->", move)
-		fmt.Printf("info nodes %d qnodes %d nps %d\n", abNodes, qNodes, nps)
-		fmt.Println("------------------------------------")
+		nps := float64(abNodes+qNodes) / elapsed.Seconds()
+
+		fmt.Println(fen)
+		fmt.Println("->", move)
+		fmt.Println("time: ", elapsed)
+		fmt.Printf("info nodes %d qnodes %d @%.2fM nps\n", abNodes, qNodes, nps/1_000_000)
+
+		fmt.Println("ttProbes:", TTProbe)
+		fmt.Println("ttHits:", TTHit)
+		fmt.Println("ttCutoffs:", ttCutoffs)
+
+		fmt.Println()
 	}
 }

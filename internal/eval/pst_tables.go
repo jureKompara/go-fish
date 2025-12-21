@@ -1,7 +1,7 @@
 package eval
 
 // [piece][square] from Black's POV
-var pst = [6][64]int{
+var pst = [6][64]int32{
 
 	// KNIGHT
 	{

@@ -61,16 +61,19 @@ func (p *Position) Unmake(move Move) {
 		p.Kings[us] = from
 		if IsCastle(flags) {
 			homeRank := us * 56
+
 			t := homeRank + 5 - 2*int(flags)
 			tMask := uint64(1) << t
 			p.PieceBB[us][ROOK] ^= tMask
 			p.ColorOcc[us] ^= tMask
 			p.Board[t] = EMPTY
+
 			f := homeRank + 7*(1-int(flags))
 			fMask := uint64(1) << f
 			p.PieceBB[us][ROOK] ^= fMask
 			p.ColorOcc[us] ^= fMask
 			p.Board[f] = ROOK
+
 			p.Occ ^= tMask | fMask
 		}
 	}

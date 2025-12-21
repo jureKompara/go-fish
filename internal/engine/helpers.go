@@ -119,12 +119,3 @@ func Line(sq1, sq2 int) uint64 {
 
 	return out
 }
-
-func fill() {
-	for sq1 := range 64 {
-		for sq2 := range 64 {
-			between[sq1][sq2] = Between(sq1, sq2)
-			line[sq1][sq2] = Line(sq1, sq2)
-		}
-	}
-}

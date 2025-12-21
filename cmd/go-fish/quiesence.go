@@ -7,7 +7,7 @@ import (
 
 const QDEPTH = 4
 
-func Q(p *engine.Position, alpha, beta, qDepth int) int {
+func Q(p *engine.Position, alpha, beta int32, qDepth int) int32 {
 
 	if p.HalfMove >= 8 {
 		count := 0
@@ -55,7 +55,7 @@ func Q(p *engine.Position, alpha, beta, qDepth int) int {
 		}
 
 		if n == 0 { // checkmate
-			return -MATE + p.Ply
+			return -MATE + int32(p.Ply)
 		}
 		return best
 	}

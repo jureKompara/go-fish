@@ -4,8 +4,8 @@ import (
 	"go-fish/internal/engine"
 )
 
-const INF = 1000000000
-const MATE = 1000000
+const INF int32 = 1000000000
+const MATE int32 = 1000000
 
 func RootSearch(p *engine.Position, depth int) engine.Move {
 
@@ -17,8 +17,8 @@ func RootSearch(p *engine.Position, depth int) engine.Move {
 		return 0
 	}
 
-	prev := 0
-	const base = 25
+	prev := int32(0)
+	const base int32 = 25
 
 	for d := 1; d <= depth; d++ {
 		w := base

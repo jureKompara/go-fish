@@ -57,16 +57,17 @@ func (p *Position) GenMoves(moves []Move) int {
 
 	mask := ^p.ColorOcc[us] & p.checkMask
 
-	bb := p.PieceBB[us][KNIGHT]
-	for bb != 0 {
-		sq := PopLSB(&bb)
-		n = p.genGenericMoves(sq, knight[sq]&mask, moves, n)
-	}
-	bb = p.PieceBB[us][BISHOP]
+	bb := p.PieceBB[us][BISHOP]
 	for bb != 0 {
 		sq := PopLSB(&bb)
 		n = p.genGenericMoves(sq, p.pseudoBishop(sq)&mask, moves, n)
 	}
+	bb = p.PieceBB[us][KNIGHT]
+	for bb != 0 {
+		sq := PopLSB(&bb)
+		n = p.genGenericMoves(sq, knight[sq]&mask, moves, n)
+	}
+
 	bb = p.PieceBB[us][ROOK]
 	for bb != 0 {
 		sq := PopLSB(&bb)

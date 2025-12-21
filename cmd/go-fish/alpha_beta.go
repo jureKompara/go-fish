@@ -13,7 +13,7 @@ const (
 	UPPER
 )
 
-func AB(p *engine.Position, alpha, beta, depth int) int {
+func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 
 	if p.HalfMove >= 8 {
 		count := 0
@@ -27,8 +27,8 @@ func AB(p *engine.Position, alpha, beta, depth int) int {
 		}
 	}
 
-	alpha = max(alpha, -MATE+p.Ply)
-	beta = min(beta, MATE-p.Ply)
+	alpha = max(alpha, -MATE+int32(p.Ply))
+	beta = min(beta, MATE-int32(p.Ply))
 	if alpha >= beta {
 		return alpha
 	}
@@ -86,7 +86,7 @@ func AB(p *engine.Position, alpha, beta, depth int) int {
 	first := true
 	for _, m := range moves {
 		p.Make(m)
-		var score int
+		var score int32
 		if first {
 			score = -AB(p, -beta, -alpha, depth-1)
 			first = false
@@ -114,7 +114,7 @@ func AB(p *engine.Position, alpha, beta, depth int) int {
 
 	if n == 0 {
 		if p.InCheck() {
-			best = -MATE + p.Ply
+			best = -MATE + int32(p.Ply)
 		} else {
 			best = 0
 		}
@@ -137,22 +137,22 @@ func AB(p *engine.Position, alpha, beta, depth int) int {
 	return best
 }
 
-func storeScore(score, ply int) int {
+func storeScore(score int32, ply int) int32 {
 	if score > 10000 {
-		return score + ply
+		return score + int32(ply)
 	}
 	if score < -10000 {
-		return score - ply
+		return score - int32(ply)
 	}
 	return score
 }
 
-func loadScore(score, ply int) int {
+func loadScore(score int32, ply int) int32 {
 	if score > 10000 {
-		return score - ply
+		return score - int32(ply)
 	}
 	if score < -10000 {
-		return score + ply
+		return score + int32(ply)
 	}
 	return score
 }
