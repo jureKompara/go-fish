@@ -2,7 +2,7 @@ package eval
 
 import "go-fish/internal/engine"
 
-var points = [6]int{300, 310, 500, 900, 100, 0}
+var points = [6]int{310, 320, 500, 900, 100, 0}
 
 var PSQ [2][6][64]int
 

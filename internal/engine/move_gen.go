@@ -120,8 +120,7 @@ func (p *Position) genCastles(moves []Move, n int) int {
 	homeSquare := us*56 + 4
 	//kingside castle
 	if p.castleRights&(0b0001<<(2*us)) != 0 &&
-		!has(p.Occ, homeSquare+1) &&
-		!has(p.Occ, homeSquare+2) &&
+		p.Occ&(0b11<<(homeSquare+1)) == 0 &&
 		!p.isAttacked(homeSquare+1, enemy) &&
 		!p.isAttacked(homeSquare+2, enemy) {
 		moves[n] = NewMove(homeSquare, homeSquare+2, KCASTLE)
@@ -129,9 +128,7 @@ func (p *Position) genCastles(moves []Move, n int) int {
 	}
 	//queenside castle
 	if p.castleRights&(0b0010<<(2*us)) != 0 &&
-		!has(p.Occ, homeSquare-1) &&
-		!has(p.Occ, homeSquare-2) &&
-		!has(p.Occ, homeSquare-3) &&
+		p.Occ&(0b111<<(homeSquare-3)) == 0 &&
 		!p.isAttacked(homeSquare-1, enemy) &&
 		!p.isAttacked(homeSquare-2, enemy) {
 		moves[n] = NewMove(homeSquare, homeSquare-2, QCASTLE)

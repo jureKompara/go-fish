@@ -15,14 +15,22 @@ const (
 
 func AB(p *engine.Position, alpha, beta, depth int) int {
 
-	count := 0
-	for i := p.Ply - 2; i >= max(0, p.Ply-p.HalfMove); i -= 2 {
-		if p.Hash == p.HashHistory[i] {
-			count++
-			if count == 2 {
-				return -10
+	if p.HalfMove >= 8 {
+		count := 0
+		for i := p.Ply - 2; i >= max(0, p.Ply-p.HalfMove); i -= 2 {
+			if p.Hash == p.HashHistory[i] {
+				count++
+				if count == 2 {
+					return 0
+				}
 			}
 		}
+	}
+
+	alpha = max(alpha, -MATE+p.Ply)
+	beta = min(beta, MATE-p.Ply)
+	if alpha >= beta {
+		return alpha
 	}
 
 	//TT probe
@@ -75,9 +83,21 @@ func AB(p *engine.Position, alpha, beta, depth int) int {
 		}
 	}
 
+	first := true
 	for _, m := range moves {
 		p.Make(m)
-		score := -AB(p, -beta, -alpha, depth-1)
+		var score int
+		if first {
+			score = -AB(p, -beta, -alpha, depth-1)
+			first = false
+		} else {
+			// null-window
+			score = -AB(p, -alpha-1, -alpha, depth-1)
+			if score > alpha && score < beta {
+				// re-search
+				score = -AB(p, -beta, -alpha, depth-1)
+			}
+		}
 		p.Unmake(m)
 
 		if score > best {
@@ -118,10 +138,10 @@ func AB(p *engine.Position, alpha, beta, depth int) int {
 }
 
 func storeScore(score, ply int) int {
-	if score > 10000 { // winning mate for side to move
+	if score > 10000 {
 		return score + ply
 	}
-	if score < -10000 { // losing mate
+	if score < -10000 {
 		return score - ply
 	}
 	return score
