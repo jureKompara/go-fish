@@ -6,6 +6,7 @@ func (p *Position) Unmake(move Move) {
 	p.Hash = state.hash
 	p.castleRights = state.castleRights
 	p.epSquare = int(state.epSquare)
+	p.HalfMove = int(state.halfmove)
 
 	p.Stm ^= 1
 	us := p.Stm

@@ -15,9 +15,7 @@ func handleUci(req string, p *engine.Position) {
 
 	case "uci":
 		{
-			fmt.Println("id name go-fish")
-			fmt.Println("id author J")
-			fmt.Println("uciok")
+			greeting()
 		}
 	case "isready":
 		fmt.Println("readyok")
@@ -30,15 +28,15 @@ func handleUci(req string, p *engine.Position) {
 			ttCutoffs = 0
 			TTHit = 0
 			TTProbe = 0
-			start := time.Now()
 
+			start := time.Now()
 			fmt.Println("bestmove", RootSearch(p, 6).Uci())
+			elapsed := time.Since(start).Seconds()
 
 			//fmt.Println("ttCutoffs: ", ttCutoffs)
 			//fmt.Println("ttHits: ", TTHit)
 			//fmt.Println("ttProbes: ", TTProbe)
 
-			elapsed := time.Since(start).Seconds()
 			nps := int(float64(abNodes+qNodes) / elapsed)
 
 			fmt.Printf("info nodes %d qnodes %d nps %d\n", abNodes, qNodes, nps)
@@ -96,4 +94,10 @@ func parseUci(uci string) (f, t, p int) {
 	too := int(to[0] - 'a' + (to[1]-'1')*8)
 
 	return fr, too, promo
+}
+
+func greeting() {
+	fmt.Println("id name go-fish")
+	fmt.Println("id author J")
+	fmt.Println("uciok")
 }

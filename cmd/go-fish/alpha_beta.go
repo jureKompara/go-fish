@@ -15,6 +15,16 @@ const (
 
 func AB(p *engine.Position, alpha, beta, depth int) int {
 
+	count := 0
+	for i := p.Ply - 2; i >= max(0, p.Ply-p.HalfMove); i -= 2 {
+		if p.Hash == p.HashHistory[i] {
+			count++
+			if count == 2 {
+				return -10
+			}
+		}
+	}
+
 	//TT probe
 	TTProbe++
 	entry := engine.TT[p.Hash&engine.IndexMask]

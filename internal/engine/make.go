@@ -9,8 +9,16 @@ func (p *Position) Make(move Move) {
 	to := move.To()
 	piece := p.Board[fr]
 	capture := p.Board[to]
+	flags := move.Flags()
 	p.save(capture)
+	p.HashHistory[p.Ply] = p.Hash
 	p.Ply++
+
+	if piece == PAWN || IsCapture(flags) {
+		p.HalfMove = 0
+	} else {
+		p.HalfMove++
+	}
 
 	frMask := uint64(1) << fr
 	//our piece will always leave from
@@ -35,7 +43,6 @@ func (p *Position) Make(move Move) {
 		p.Hash ^= zobristPiece[enemy][capture][to]
 	}
 
-	flags := move.Flags()
 	if piece == KING {
 		p.Kings[us] = to
 		if IsCastle(flags) {

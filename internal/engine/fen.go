@@ -165,7 +165,7 @@ func FromFen(fen string) Position {
 		castleRights: castleRights,
 		epSquare:     epSquare,
 		fullMove:     int(full_move),
-		halfMove:     int(half_move),
+		HalfMove:     int(half_move),
 		Kings:        kings,
 	}
 	pos.GenerateZobrist()

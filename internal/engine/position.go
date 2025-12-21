@@ -24,14 +24,17 @@ type Position struct {
 	Stm          int          //side to move 0=white 1=black
 	castleRights uint8        //0b1111 4 bits denote the castling rights 0123-KQkq
 	epSquare     int          //denotes en passant square
-	fullMove     int          //fullmove counter
-	halfMove     int          //halfmove counter
 	Kings        [2]int       //per color king position
-	//moveStack    [512]Move      //stack of move structs
-	stateStack   [512]State     //stack of state structs
-	Ply          int            //the current Ply so we can index into the stacks
-	Movebuff     [512][256]Move //buffer for storing moves per Ply
-	Hash         uint64         //incremental Zobrist key
+
+	Ply         int            //the current Ply so we can index into the stacks
+	stateStack  [512]State     //stack of state structs
+	Movebuff    [512][256]Move //buffer for storing moves per Ply
+	Hash        uint64         //incremental Zobrist hash key
+	HashHistory [512]uint64    //a history of hashes for 3fold rep
+
+	fullMove int //fullmove counter
+	HalfMove int //halfmove counter
+
 	kingBlockers uint64
 	allowed      [64]uint64
 	checkMask    uint64
@@ -47,7 +50,7 @@ func (p *Position) save(capture uint8) {
 		capture,
 		p.castleRights,
 		uint8(p.epSquare),
-		uint8(p.halfMove),
+		uint8(p.HalfMove),
 		p.Hash,
 	}
 }

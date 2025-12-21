@@ -9,6 +9,16 @@ const QDEPTH = 4
 
 func Q(p *engine.Position, alpha, beta, qDepth int) int {
 
+	count := 0
+	for i := p.Ply - 2; i >= max(0, p.Ply-p.HalfMove); i -= 2 {
+		if p.Hash == p.HashHistory[i] {
+			count++
+			if count == 2 {
+				return -10
+			}
+		}
+	}
+
 	//max qDepth-> static eval
 	if qDepth == 0 {
 		return eval.Pst(p)
