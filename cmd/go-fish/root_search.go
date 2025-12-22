@@ -18,7 +18,7 @@ func RootSearch(p *engine.Position, depth int) engine.Move {
 	}
 
 	prev := int32(0)
-	const base int32 = 25
+	const base int32 = 10
 
 	for d := 1; d <= depth; d++ {
 		w := base
@@ -59,5 +59,4 @@ func RootSearch(p *engine.Position, depth int) engine.Move {
 		}
 	}
 	return moves[0]
-
 }

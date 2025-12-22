@@ -19,8 +19,6 @@ func (p *Position) GenMoves(moves []Move) int {
 
 	checkers := p.Checkers(ksq, enemy)
 
-	n := 0
-
 	switch {
 	case checkers == 0:
 		p.checkMask = ^uint64(0) // default: no restriction
@@ -36,14 +34,16 @@ func (p *Position) GenMoves(moves []Move) int {
 		}
 
 	default:
-		//double check we have to move the king
+		//double check -> we have to move the king
 		return p.genKingMoves(moves, 0)
 	}
 
+	// pin logic
 	snipers := rookAttTable[ksq][0]&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN]) |
 		bishopAttTable[ksq][0]&(p.PieceBB[enemy][BISHOP]|p.PieceBB[enemy][QUEEN])
 
 	p.kingBlockers = 0
+
 	for snipers != 0 {
 		sq := PopLSB(&snipers)
 		betweenMask := between[ksq][sq] & p.Occ
@@ -56,6 +56,7 @@ func (p *Position) GenMoves(moves []Move) int {
 
 	mask := ^p.ColorOcc[us] & p.checkMask
 
+	n := 0
 	bb := p.PieceBB[us][KNIGHT]
 	for bb != 0 {
 		sq := PopLSB(&bb)

@@ -3,9 +3,10 @@ package main
 import (
 	"go-fish/internal/engine"
 	"go-fish/internal/eval"
+	"sort"
 )
 
-const QDEPTH = 4
+const QDEPTH = 5
 
 func Q(p *engine.Position, alpha, beta int32, qDepth int) int32 {
 
@@ -76,6 +77,10 @@ func Q(p *engine.Position, alpha, beta int32, qDepth int) int32 {
 	moves := p.Movebuff[p.Ply][:]
 	n := p.GenTactics(moves)
 	moves = moves[:n]
+
+	sort.Slice(moves, func(i, j int) bool {
+		return engine.MvvLvaScore(p, moves[i]) > engine.MvvLvaScore(p, moves[j])
+	})
 
 	for _, m := range moves {
 		p.Make(m)

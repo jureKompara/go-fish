@@ -2,6 +2,7 @@ package main
 
 import (
 	"go-fish/internal/engine"
+	"sort"
 )
 
 var abNodes uint64
@@ -56,13 +57,14 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		}
 	}
 
-	originalAlpha := alpha
-	originalBeta := beta
-
 	//we start quiesence at leaf nodes
 	if depth == 0 {
 		return Q(p, alpha, beta, QDEPTH)
 	}
+
+	originalAlpha := alpha
+	originalBeta := beta
+
 	abNodes++
 
 	best := -INF
@@ -74,7 +76,7 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 
 	//hash move is first!
 	if p.Hash == entry.Hash {
-		hashMove := entry.BestMove
+		hashMove := entry.HashMove
 		for i, m := range moves {
 			if m == hashMove {
 				moves[0], moves[i] = moves[i], moves[0]
@@ -91,6 +93,10 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 			write++
 		}
 	}
+
+	sort.Slice(moves[1:write], func(i, j int) bool {
+		return engine.MvvLvaScore(p, moves[1+i]) > engine.MvvLvaScore(p, moves[1+j])
+	})
 
 	first := true
 	for _, m := range moves {
@@ -145,7 +151,7 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		Depth:     uint8(depth),
 		Score:     storeScore(best, p.Ply),
 		BoundType: boundType,
-		BestMove:  bestMove}
+		HashMove:  bestMove}
 
 	return best
 }
