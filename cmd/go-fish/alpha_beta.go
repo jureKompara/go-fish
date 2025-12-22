@@ -34,9 +34,8 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	}
 
 	//TT probe
-	TTProbe++
 	entry := engine.TT[p.Hash&engine.IndexMask]
-
+	TTProbe++
 	if entry.Hash == p.Hash && entry.Depth >= uint8(depth) {
 		ttScore := loadScore(entry.Score, p.Ply)
 		TTHit++
@@ -73,6 +72,7 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	n := p.GenMoves(moves)
 	moves = moves[:n]
 
+	//hash move is first!
 	if p.Hash == entry.Hash {
 		hashMove := entry.BestMove
 		for i, m := range moves {
@@ -80,6 +80,15 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 				moves[0], moves[i] = moves[i], moves[0]
 				break
 			}
+		}
+	}
+
+	//order captures first
+	write := 1
+	for i := 1; i < n; i++ {
+		if engine.IsCapture(moves[i].Flags()) {
+			moves[write], moves[i] = moves[i], moves[write]
+			write++
 		}
 	}
 
@@ -118,6 +127,10 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		} else {
 			best = 0
 		}
+	}
+
+	if uint8(depth) < entry.Depth {
+		return best
 	}
 
 	boundType := EXACT

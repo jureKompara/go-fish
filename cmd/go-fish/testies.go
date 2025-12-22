@@ -19,6 +19,8 @@ var testFens = []string{
 
 func Test(depth *int) {
 	fmt.Println("depth: ", *depth)
+
+	var fullDuration time.Duration
 	for _, fen := range testFens {
 		p := engine.FromFen(fen)
 
@@ -31,18 +33,20 @@ func Test(depth *int) {
 		start := time.Now()
 		move := RootSearch(&p, *depth).Uci()
 		elapsed := time.Since(start)
+		fullDuration += elapsed
 
-		nps := float64(abNodes+qNodes) / elapsed.Seconds()
+		//nps := float64(abNodes+qNodes) / elapsed.Seconds()
 
 		fmt.Println(fen)
 		fmt.Println("->", move)
 		fmt.Println("time: ", elapsed)
-		fmt.Printf("info nodes %d qnodes %d @%.2fM nps\n", abNodes, qNodes, nps/1_000_000)
+		//fmt.Printf("info nodes %d qnodes %d @%.2fM nps\n", abNodes, qNodes, nps/1_000_000)
 
-		fmt.Println("ttProbes:", TTProbe)
-		fmt.Println("ttHits:", TTHit)
-		fmt.Println("ttCutoffs:", ttCutoffs)
+		//fmt.Println("ttProbes:", TTProbe)
+		//fmt.Println("ttHits:", TTHit)
+		//fmt.Println("ttCutoffs:", ttCutoffs)
 
-		fmt.Println()
+		fmt.Println("---------------------------------------------------------------")
 	}
+	fmt.Println("Test took:", fullDuration)
 }

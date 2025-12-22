@@ -24,7 +24,6 @@ func (p *Position) GenMoves(moves []Move) int {
 	switch {
 	case checkers == 0:
 		p.checkMask = ^uint64(0) // default: no restriction
-		n = p.genCastles(moves, 0)
 
 	case checkers&(checkers-1) == 0:
 		c := bits.TrailingZeros64(checkers)
@@ -57,15 +56,16 @@ func (p *Position) GenMoves(moves []Move) int {
 
 	mask := ^p.ColorOcc[us] & p.checkMask
 
-	bb := p.PieceBB[us][BISHOP]
-	for bb != 0 {
-		sq := PopLSB(&bb)
-		n = p.genGenericMoves(sq, p.pseudoBishop(sq)&mask, moves, n)
-	}
-	bb = p.PieceBB[us][KNIGHT]
+	bb := p.PieceBB[us][KNIGHT]
 	for bb != 0 {
 		sq := PopLSB(&bb)
 		n = p.genGenericMoves(sq, knight[sq]&mask, moves, n)
+	}
+
+	bb = p.PieceBB[us][BISHOP]
+	for bb != 0 {
+		sq := PopLSB(&bb)
+		n = p.genGenericMoves(sq, p.pseudoBishop(sq)&mask, moves, n)
 	}
 
 	bb = p.PieceBB[us][ROOK]
@@ -81,7 +81,13 @@ func (p *Position) GenMoves(moves []Move) int {
 
 	n = p.genKingMoves(moves, n)
 
-	return p.genPawnMoves(moves, n)
+	n = p.genPawnMoves(moves, n)
+
+	if checkers == 0 {
+		n = p.genCastles(moves, n)
+	}
+
+	return n
 }
 
 func (p *Position) genKingMoves(moves []Move, n int) int {
