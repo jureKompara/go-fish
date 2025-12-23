@@ -14,13 +14,14 @@ func handleUci(req string, p *engine.Position) {
 	switch cmd {
 
 	case "uci":
-		{
-			greeting()
-		}
+		greeting()
+
 	case "isready":
 		fmt.Println("readyok")
+
 	case "position":
 		handlePosition(rest, p)
+
 	case "go":
 		{
 			abNodes = 0
@@ -42,62 +43,100 @@ func handleUci(req string, p *engine.Position) {
 			fmt.Printf("info nodes %d qnodes %d nps %d\n", abNodes, qNodes, nps)
 			return
 		}
+	case "d":
+		display(p)
+
 	case "quit":
 		os.Exit(0)
+
 	case "stop":
 		os.Exit(0)
 	}
 }
 
-func handlePosition(stuff string, p *engine.Position) {
-	tokens := strings.Split(stuff, " ")
-	for i := 0; i < len(tokens); i++ {
-		switch tokens[i] {
-		case "startpos":
-			*p = engine.StartPos()
-		case "fen":
-			i++ //this needs a fix
-			*p = engine.FromFen(tokens[i])
-		case "moves":
-			i++
-			for i < len(tokens) {
-				moves := p.Movebuff[p.Ply][:]
-				n := p.GenMoves(moves)
-				moves = moves[:n]
-				from, to, promo := parseUci(tokens[i])
+// this expects:
+// startpos [moves m1 m2....]
+// fen fensStr [moves m1 m2....]
+func handlePosition(line string, p *engine.Position) {
+	// tokens after "position"
+	tok := strings.Fields(line)
+	if len(tok) == 0 {
+		return
+	}
 
-				for _, l := range moves {
-					if l.From() == from && l.To() == to &&
-						(promo == engine.EMPTY || promo == int(engine.Promo(l.Flags()))) {
-						p.Make(l)
-						break
-					}
-				}
-				i++
-			}
+	var off int
+	switch tok[0] {
+	case "startpos":
+		*p = engine.StartPos()
+		off = 1
+
+	case "fen":
+		// UCI fen is exactly 6 fields: piece placement, stm, castling, ep, halfmove, fullmove
+		if len(tok) <= 6 {
+			return
 		}
+		off = 7
+		fen := strings.Join(tok[1:7], " ")
+		*p = engine.FromFen(fen)
+
+	default:
+		return
+	}
+
+	if off < len(tok) && tok[off] == "moves" {
+		playMoves(p, tok[off+1:])
 	}
 }
 
-// converts UCI notation e4e5 to square space
-func parseUci(uci string) (f, t, p int) {
-	if len(uci) < 4 {
-		return -1, -1, engine.EMPTY
-	}
-	from := uci[0:2]
-	to := uci[2:4]
-	promo := engine.EMPTY
-	if len(uci) == 5 {
-		promo = engine.CharToPiece[uci[4]]
-	}
-	fr := int(from[0] - 'a' + (from[1]-'1')*8)
-	too := int(to[0] - 'a' + (to[1]-'1')*8)
+func playMoves(p *engine.Position, tokens []string) {
 
-	return fr, too, promo
+	for _, t := range tokens {
+		moves := p.Movebuff[p.Ply][:]
+		n := p.GenMoves(moves)
+		moves = moves[:n]
+
+		found := false
+
+		for _, m := range moves {
+			if m.Uci() == t {
+				found = true
+				p.Make(m)
+				break
+			}
+		}
+		if !found {
+			fmt.Printf("[Err: %v is not legal]\n", t)
+
+		}
+	}
 }
 
 func greeting() {
 	fmt.Println("id name go-fish")
 	fmt.Println("id author J")
 	fmt.Println("uciok")
+}
+
+func display(p *engine.Position) {
+	for row := 7; row >= 0; row-- {
+		fmt.Println("+---+---+---+---+---+---+---+---+")
+		for file := range 8 {
+			sq := row*8 + file
+			black := uint8(0)
+			if p.ColorOcc[engine.BLACK]&(1<<sq) != 0 {
+				black = 32
+			}
+
+			c := engine.PieceToChar[p.Board[sq]] + black
+
+			fmt.Printf("| %c ", c)
+		}
+		fmt.Printf("| %d\n", row+1)
+	}
+	fmt.Println("+---+---+---+---+---+---+---+---+")
+	fmt.Println("  a   b   c   d   e   f   g   h")
+
+	fmt.Println("")
+	fmt.Println("Fen:", p.ExportFen())
+	fmt.Printf("Key: %X\n", p.Hash)
 }

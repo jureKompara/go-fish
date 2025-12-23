@@ -77,7 +77,7 @@ func main() {
 
 	} else {
 		scanner := bufio.NewScanner(os.Stdin)
-		var p engine.Position
+		p := engine.StartPos()
 		for scanner.Scan() {
 			handleUci(scanner.Text(), &p)
 		}

@@ -37,6 +37,7 @@ var Tests = []TestCase{
 	},
 }
 
+// used to convert a FEN to a position
 var CharToPiece = ['r' + 1]int{
 	'P': PAWN,
 	'N': KNIGHT,
@@ -52,14 +53,15 @@ var CharToPiece = ['r' + 1]int{
 	'k': KING,
 }
 
-var _pieceToChar = [7]int{
+// used to turn a position into a FEN
+var PieceToChar = [7]uint8{
 	PAWN:   'P',
 	KNIGHT: 'N',
 	BISHOP: 'B',
 	ROOK:   'R',
 	QUEEN:  'Q',
 	KING:   'K',
-	EMPTY:  0,
+	EMPTY:  ' ',
 }
 
 func StartPos() Position {
@@ -74,8 +76,6 @@ func FromFen(fen string) Position {
 	ep := split[3]
 	fm := split[4]
 	hm := split[5]
-
-	var color int
 
 	var pieceBB [2][6]uint64
 	var allBB [2]uint64
@@ -98,33 +98,32 @@ func FromFen(fen string) Position {
 		}
 		if '1' <= c && c <= '8' {
 			for i := range int(c - '0') {
-				b[rank*8+file+i] = uint8(EMPTY)
+				b[rank*8+file+i] = EMPTY
 			}
 			file += int(c) - '0'
 			continue
 		}
 
+		color := WHITE
 		if 'a' <= c && c <= 'z' {
-			color = 1
-		} else {
-			color = 0
+			color = BLACK
 		}
 
 		pieceType := CharToPiece[c]
-		square := rank*8 + file
+		sq := rank*8 + file
 
-		b[square] = uint8(pieceType)
+		b[sq] = uint8(pieceType)
 
-		pieceBB[color][pieceType] |= (1 << square)
+		pieceBB[color][pieceType] |= (1 << sq)
 		if pieceType == KING {
-			kings[color] = square
+			kings[color] = sq
 		}
 		file++
 	}
 
 	//to move
 	if clr == "b" {
-		toMove = 1
+		toMove = BLACK
 	}
 
 	//castle rights
@@ -142,7 +141,7 @@ func FromFen(fen string) Position {
 	}
 	//ep square
 	if ep != "-" {
-		epSquare = int(8*(split[3][1]-'1') + split[3][0] - 'a')
+		epSquare = int(8*(ep[1]-'1') + ep[0] - 'a')
 	}
 
 	full_move, _ := strconv.ParseInt(fm, 10, 16)
@@ -164,33 +163,24 @@ func FromFen(fen string) Position {
 		Stm:          toMove,
 		castleRights: castleRights,
 		epSquare:     epSquare,
+		Kings:        kings,
 		fullMove:     int(full_move),
 		HalfMove:     int(half_move),
-		Kings:        kings,
 	}
 	pos.GenerateZobrist()
 	return pos
 }
 
-/*
-func (p *Position) exportFen() string {
+func (p *Position) ExportFen() string {
 	var sb strings.Builder
 	var count int
-
-	//we build up a board to easily turn it to a fen
-	var board [64]byte
-	for p, bb := range p.PieceBB {
-		for bb != 0 {
-			board[PopLSB(&bb)] = byte(p + 1)
-		}
-	}
 
 	for rank := 7; rank >= 0; rank-- {
 		for file := range 8 {
 			sq := rank*8 + file
 
-			c := board[sq]
-			if c == 0 {
+			c := p.Board[sq]
+			if c == EMPTY {
 				count++
 				continue
 			}
@@ -198,7 +188,11 @@ func (p *Position) exportFen() string {
 				sb.WriteByte(byte(count + '0'))
 				count = 0
 			}
-			sb.WriteByte(byte(_pieceToChar[(c-1)%6]) + (c-1)/6*32)
+			black := uint8(0)
+			if p.ColorOcc[BLACK]&(1<<sq) != 0 {
+				black = 32
+			}
+			sb.WriteByte(PieceToChar[c] + black)
 		}
 		if count > 0 {
 			sb.WriteByte(byte(count + '0'))
@@ -209,14 +203,14 @@ func (p *Position) exportFen() string {
 		}
 	}
 
-	if p.ToMove == 0 {
+	if p.Stm == 0 {
 		sb.WriteString(" w ")
 	} else {
 		sb.WriteString(" b ")
 	}
 
 	if p.castleRights == 0 {
-		sb.WriteString("-")
+		sb.WriteByte('-')
 	} else {
 		if p.castleRights&0b0001 != 0 {
 			sb.WriteByte('K')
@@ -242,9 +236,8 @@ func (p *Position) exportFen() string {
 	var buf [8]byte
 	b := strconv.AppendInt(buf[:0], int64(p.fullMove), 10)
 	b = append(b, ' ')
-	b = strconv.AppendInt(b, int64(p.halfMove), 10)
+	b = strconv.AppendInt(b, int64(p.HalfMove), 10)
 	sb.Write(b)
 
 	return sb.String()
 }
-*/

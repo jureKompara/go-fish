@@ -18,7 +18,7 @@ func RootSearch(p *engine.Position, depth int) engine.Move {
 	}
 
 	prev := int32(0)
-	const base int32 = 10
+	const base int32 = 25
 
 	for d := 1; d <= depth; d++ {
 		w := base
@@ -26,28 +26,44 @@ func RootSearch(p *engine.Position, depth int) engine.Move {
 		b := prev + w
 
 		for {
-			bestScore := -INF
+			bestScore := int32(-INF)
 			bestIdx := 0
+			alpha := a
 
 			for i, m := range moves {
 				p.Make(m)
-				score := -AB(p, -b, -a, d-1) // root aspiration window
+
+				var score int32
+				if i == 0 {
+					// 1) full window using aspiration bounds
+					score = -AB(p, -b, -alpha, d-1)
+				} else {
+					// 2) null-window "can this beat alpha?"
+					score = -AB(p, -alpha-1, -alpha, d-1)
+
+					// 3) if it might be better, confirm with full window (still within aspiration)
+					if score > alpha && score < b {
+						score = -AB(p, -b, -alpha, d-1)
+					}
+				}
+
 				p.Unmake(m)
 
 				if score > bestScore {
 					bestScore = score
 					bestIdx = i
 				}
+				if score > alpha {
+					alpha = score
+				}
 			}
 
-			// fail-low
-			if bestScore <= a {
+			if bestScore <= a { // fail-low: widen
 				a -= w
 				w *= 2
 				continue
 			}
-			// fail-high
-			if bestScore >= b {
+			if bestScore >= b { // fail-high: widen
 				b += w
 				w *= 2
 				continue

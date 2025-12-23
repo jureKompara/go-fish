@@ -16,16 +16,8 @@ const (
 
 func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 
-	if p.HalfMove >= 8 {
-		count := 0
-		for i := p.Ply - 2; i >= max(0, p.Ply-p.HalfMove); i -= 2 {
-			if p.Hash == p.HashHistory[i] {
-				count++
-				if count == 2 {
-					return 0
-				}
-			}
-		}
+	if is3Fold(p) {
+		return 0
 	}
 
 	alpha = max(alpha, -MATE+int32(p.Ply))
@@ -35,9 +27,12 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	}
 
 	//TT probe
-	entry := engine.TT[p.Hash&engine.IndexMask]
+	index := p.Hash & engine.IndexMask
+	entry := engine.TT[index]
 	TTProbe++
-	if entry.Hash == p.Hash && entry.Depth >= uint8(depth) {
+
+	hit := entry.Hash == p.Hash
+	if hit && entry.Depth >= uint8(depth) {
 		ttScore := loadScore(entry.Score, p.Ply)
 		TTHit++
 		switch entry.BoundType {
@@ -75,28 +70,33 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	moves = moves[:n]
 
 	//hash move is first!
+	off := 0
 	if p.Hash == entry.Hash {
 		hashMove := entry.HashMove
 		for i, m := range moves {
 			if m == hashMove {
+				off = 1
 				moves[0], moves[i] = moves[i], moves[0]
 				break
 			}
 		}
 	}
 
-	//order captures first
-	write := 1
-	for i := 1; i < n; i++ {
+	//partition captures first
+	write := off
+	for i := off; i < n; i++ {
 		if engine.IsCapture(moves[i].Flags()) {
 			moves[write], moves[i] = moves[i], moves[write]
 			write++
 		}
 	}
 
-	sort.Slice(moves[1:write], func(i, j int) bool {
-		return engine.MvvLvaScore(p, moves[1+i]) > engine.MvvLvaScore(p, moves[1+j])
-	})
+	//only sort if there is more than 1 capture
+	if write-off > 1 {
+		sort.Slice(moves[off:write], func(i, j int) bool {
+			return engine.MvvLvaScore(p, moves[off+i]) > engine.MvvLvaScore(p, moves[off+j])
+		})
+	}
 
 	first := true
 	for _, m := range moves {
@@ -135,10 +135,6 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		}
 	}
 
-	if uint8(depth) < entry.Depth {
-		return best
-	}
-
 	boundType := EXACT
 	if best <= originalAlpha {
 		boundType = UPPER
@@ -146,7 +142,23 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		boundType = LOWER
 	}
 
-	engine.TT[p.Hash&engine.IndexMask] = engine.TTEntry{
+	if entry.Hash == p.Hash {
+		// same position: always refresh best move (and age if you have it)
+		entry.HashMove = bestMove
+
+		// only overwrite score/depth/flag if new info is at least as deep
+		if uint8(depth) < entry.Depth {
+			engine.TT[index].Score = best
+			engine.TT[index].BoundType = boundType
+			return best
+		}
+		// else fallthrough to full overwrite
+	} else if entry.Hash != 0 && entry.Depth > uint8(depth) {
+		// collision and old is deeper: keep old
+		return best
+	}
+
+	engine.TT[index] = engine.TTEntry{
 		Hash:      p.Hash,
 		Depth:     uint8(depth),
 		Score:     storeScore(best, p.Ply),
@@ -174,4 +186,19 @@ func loadScore(score int32, ply int) int32 {
 		return score + int32(ply)
 	}
 	return score
+}
+
+func is3Fold(p *engine.Position) bool {
+	if p.HalfMove >= 8 {
+		count := 0
+		for i := p.Ply - 2; i >= max(0, p.Ply-p.HalfMove); i -= 2 {
+			if p.Hash == p.HashHistory[i] {
+				count++
+				if count == 2 {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
