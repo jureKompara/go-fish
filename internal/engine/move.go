@@ -50,7 +50,7 @@ func Promo(flag uint8) uint8 {
 	return flag & 0x3
 }
 
-// converts a move to UCI notation (e4e5 c7c8q)
+// converts a move to UCI notation (e4e5 c7c8q etc.)
 func (m Move) Uci() string {
 	from := m.From()
 	to := m.To()
@@ -64,7 +64,7 @@ func (m Move) Uci() string {
 	if IsPromo(flag) {
 		switch Promo(flag) {
 		case KNIGHT:
-			return fmt.Sprintf("%c%d%c%dk", f+'a', r+1, tf+'a', tr+1)
+			return fmt.Sprintf("%c%d%c%dn", f+'a', r+1, tf+'a', tr+1)
 		case BISHOP:
 			return fmt.Sprintf("%c%d%c%db", f+'a', r+1, tf+'a', tr+1)
 		case ROOK:

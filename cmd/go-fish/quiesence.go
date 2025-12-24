@@ -27,9 +27,7 @@ func Q(p *engine.Position, alpha, beta int32, qDepth int) int32 {
 		// Case 1: side to move is in check → full evasion search
 		// ---------------------------
 		best := -INF
-		moves := p.Movebuff[p.Ply][:]
-		n := p.GenEvasions(moves, checkers)
-		moves = moves[:n]
+		moves := p.GenEvasions(checkers)
 
 		for _, m := range moves {
 			p.Make(m)
@@ -47,7 +45,7 @@ func Q(p *engine.Position, alpha, beta int32, qDepth int) int32 {
 			}
 		}
 
-		if n == 0 { // checkmate
+		if len(moves) == 0 { // checkmate
 			return -MATE + int32(p.Ply)
 		}
 		return best
@@ -57,24 +55,31 @@ func Q(p *engine.Position, alpha, beta int32, qDepth int) int32 {
 	// ---------------------------
 
 	// stand pat: "if we do nothing"
-	staticEval := eval.Pst(p)
+	stand := eval.Pst(p)
 
-	if staticEval >= beta {
-		return staticEval
+	if stand >= beta {
+		return stand
 	}
-	if staticEval > alpha {
-		alpha = staticEval
+	if stand > alpha {
+		alpha = stand
 	}
 
-	moves := p.Movebuff[p.Ply][:]
-	n := p.GenTactics(moves)
-	moves = moves[:n]
+	moves := p.GenTactics()
 
 	sort.Slice(moves, func(i, j int) bool {
 		return engine.MvvLvaScore(p, moves[i]) > engine.MvvLvaScore(p, moves[j])
 	})
 
 	for _, m := range moves {
+
+		//what we gain from the capture
+		gain := eval.Points[p.Board[m.To()]]
+
+		// delta prune
+		if stand+gain+100 < alpha {
+			continue
+		}
+
 		p.Make(m)
 		score := -Q(p, -beta, -alpha, qDepth-1)
 		p.Unmake(m)

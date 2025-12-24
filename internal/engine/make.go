@@ -68,8 +68,8 @@ func (p *Position) Make(move Move) {
 
 	if p.epSquare != 64 { // REMOVE old EP
 		p.Hash ^= zobristEP[p.epSquare&7]
+		p.epSquare = 64
 	}
-	p.epSquare = 64
 
 	if flags != QUIET && flags != CAPTURE {
 		//for both double pushes and ep captures the relevant squre
@@ -96,7 +96,6 @@ func (p *Position) Make(move Move) {
 			p.Board[to] = promo
 			p.Hash ^= zobristPiece[us][PAWN][to]
 			p.Hash ^= zobristPiece[us][promo][to]
-
 		}
 	}
 

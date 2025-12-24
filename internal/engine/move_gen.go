@@ -12,10 +12,11 @@ const rank3 uint64 = 0x0000000000FF0000
 const rank6 uint64 = 0x0000FF0000000000
 
 // returns all pseudo legal moves in the position
-func (p *Position) GenMoves(moves []Move) int {
+func (p *Position) GenMoves() []Move {
 	us := p.Stm
 	enemy := us ^ 1
 	ksq := p.Kings[us]
+	moves := p.Movebuff[p.Ply][:]
 
 	checkers := p.Checkers(ksq, enemy)
 
@@ -35,7 +36,8 @@ func (p *Position) GenMoves(moves []Move) int {
 
 	default:
 		//double check -> we have to move the king
-		return p.genKingMoves(moves, 0)
+		n := p.genKingMoves(moves, 0)
+		return moves[:n]
 	}
 
 	// pin logic
@@ -57,6 +59,7 @@ func (p *Position) GenMoves(moves []Move) int {
 	mask := ^p.ColorOcc[us] & p.checkMask
 
 	n := 0
+
 	bb := p.PieceBB[us][KNIGHT]
 	for bb != 0 {
 		sq := PopLSB(&bb)
@@ -88,7 +91,7 @@ func (p *Position) GenMoves(moves []Move) int {
 		n = p.genCastles(moves, n)
 	}
 
-	return n
+	return moves[:n]
 }
 
 func (p *Position) genKingMoves(moves []Move, n int) int {

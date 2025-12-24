@@ -3,10 +3,12 @@ package engine
 import "math/bits"
 
 // returns all pseudo legal moves in the position
-func (p *Position) GenEvasions(moves []Move, checkers uint64) int {
+func (p *Position) GenEvasions(checkers uint64) []Move {
 	us := p.Stm
 	enemy := us ^ 1
 	ksq := p.Kings[us]
+
+	moves := p.Movebuff[p.Ply][:]
 
 	if checkers&(checkers-1) == 0 {
 		c := bits.TrailingZeros64(checkers)
@@ -20,7 +22,8 @@ func (p *Position) GenEvasions(moves []Move, checkers uint64) int {
 
 	} else {
 		//double check we have to move the king
-		return p.genKingMoves(moves, 0)
+		n := p.genKingMoves(moves, 0)
+		return moves[:n]
 	}
 
 	snipers := rookAttTable[ksq][0]&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN]) |
@@ -59,7 +62,8 @@ func (p *Position) GenEvasions(moves []Move, checkers uint64) int {
 		n = p.genGenericMoves(sq, (p.pseudoBishop(sq)|p.pseudoRook(sq))&p.checkMask, moves, n)
 	}
 
-	return p.genPawnMoves3(moves, n)
+	n = p.genPawnMoves3(moves, n)
+	return moves[:n]
 }
 
 func (p *Position) genPawnMoves3(moves []Move, n int) int {

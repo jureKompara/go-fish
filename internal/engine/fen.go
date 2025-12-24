@@ -78,8 +78,8 @@ func FromFen(fen string) Position {
 	hm := split[5]
 
 	var pieceBB [2][6]uint64
-	var allBB [2]uint64
-	var occupant uint64
+	var colorOcc [2]uint64
+	var occ uint64
 	var b [64]uint8
 	var toMove int
 	var castleRights uint8
@@ -150,15 +150,15 @@ func FromFen(fen string) Position {
 
 	//derived bit boards
 	for piece := 0; piece <= KING; piece++ {
-		allBB[WHITE] |= pieceBB[WHITE][piece]
-		allBB[BLACK] |= pieceBB[BLACK][piece]
+		colorOcc[WHITE] |= pieceBB[WHITE][piece]
+		colorOcc[BLACK] |= pieceBB[BLACK][piece]
 	}
-	occupant = allBB[WHITE] | allBB[BLACK]
+	occ = colorOcc[WHITE] | colorOcc[BLACK]
 
 	var pos = Position{
 		PieceBB:      pieceBB,
-		ColorOcc:     allBB,
-		Occ:          occupant,
+		ColorOcc:     colorOcc,
+		Occ:          occ,
 		Board:        b,
 		Stm:          toMove,
 		castleRights: castleRights,

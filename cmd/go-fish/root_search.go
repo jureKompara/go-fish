@@ -1,26 +1,40 @@
 package main
 
 import (
+	"fmt"
 	"go-fish/internal/engine"
+	"time"
 )
 
 const INF int32 = 1000000000
 const MATE int32 = 1000000
 
-func RootSearch(p *engine.Position, depth int) engine.Move {
+func RootSearch(p *engine.Position, options Options) engine.Move {
 
-	moves := p.Movebuff[p.Ply][:]
-	n := p.GenMoves(moves)
-	moves = moves[:n]
+	var timeBuget int
 
-	if n == 0 {
+	if options.movetime != 0 {
+		timeBuget = options.movetime
+	} else if p.Stm == engine.WHITE {
+		timeBuget = options.wtime/20 + options.winc
+	} else {
+		timeBuget = options.btime/20 + options.binc
+	}
+	timeBuget = min(timeBuget, 9000)
+
+	deadline := time.Now().Add(time.Duration(timeBuget) * time.Millisecond)
+
+	moves := p.GenMoves()
+
+	if len(moves) == 0 {
 		return 0
 	}
 
 	prev := int32(0)
 	const base int32 = 25
 
-	for d := 1; d <= depth; d++ {
+	for d := 1; d <= options.depth; d++ {
+
 		w := base
 		a := prev - w
 		b := prev + w
@@ -31,6 +45,12 @@ func RootSearch(p *engine.Position, depth int) engine.Move {
 			alpha := a
 
 			for i, m := range moves {
+				// end the search if we are out of time
+				if time.Now().After(deadline) {
+					fmt.Println("depth ", d-1, "reached")
+					return moves[0]
+				}
+
 				p.Make(m)
 
 				var score int32
@@ -53,6 +73,7 @@ func RootSearch(p *engine.Position, depth int) engine.Move {
 					bestScore = score
 					bestIdx = i
 				}
+
 				if score > alpha {
 					alpha = score
 				}

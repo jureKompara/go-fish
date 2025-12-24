@@ -5,13 +5,11 @@ import (
 )
 
 // generates strictly legal captures and promotion moves
-func (p *Position) GenTactics(moves []Move) int {
+func (p *Position) GenTactics() []Move {
 	us := p.Stm
 	enemy := us ^ 1
 	ksq := p.Kings[us]
 	them := p.ColorOcc[enemy]
-
-	n := 0
 
 	snipers := rookAttTable[ksq][0]&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN]) |
 		bishopAttTable[ksq][0]&(p.PieceBB[enemy][BISHOP]|p.PieceBB[enemy][QUEEN])
@@ -26,8 +24,8 @@ func (p *Position) GenTactics(moves []Move) int {
 			p.allowed[bits.TrailingZeros64(betweenMask)] = line[ksq][sq]
 		}
 	}
-
-	n = p.genPawnMoves2(moves, n)
+	moves := p.Movebuff[p.Ply][:]
+	n := p.genPawnMoves2(moves, 0)
 
 	bb := p.PieceBB[us][KNIGHT]
 	for bb != 0 {
@@ -49,7 +47,8 @@ func (p *Position) GenTactics(moves []Move) int {
 		sq := PopLSB(&bb)
 		n = p.genGenericMoves2(sq, (p.pseudoBishop(sq)|p.pseudoRook(sq))&them, moves, n)
 	}
-	return p.genKingMoves2(ksq, king[ksq]&them, moves, n)
+	n = p.genKingMoves2(ksq, king[ksq]&them, moves, n)
+	return moves[:n]
 }
 
 func (p *Position) genKingMoves2(sq int, captures uint64, moves []Move, n int) int {
@@ -64,12 +63,9 @@ func (p *Position) genKingMoves2(sq int, captures uint64, moves []Move, n int) i
 		moves[n] = NewMove(sq, to, CAPTURE)
 		n++
 	}
-
 	return n
 }
 
-// generates knight and slider moves becouse they have no special cases
-// pawns and kings have promotions and castling so they get their own generators
 func (p *Position) genGenericMoves2(sq int, captures uint64, moves []Move, n int) int {
 
 	if has(p.kingBlockers, sq) {

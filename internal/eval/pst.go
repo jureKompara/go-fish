@@ -2,7 +2,7 @@ package eval
 
 import "go-fish/internal/engine"
 
-var points = [6]int32{310, 320, 500, 900, 100, 0}
+var Points = [7]int32{310, 320, 500, 900, 100, 0, 100}
 
 var PSQ [2][6][64]int32
 
@@ -25,7 +25,7 @@ func Pst(p *engine.Position) int32 {
 
 func init() {
 	for piece := range 6 {
-		material := points[piece]
+		material := Points[piece]
 		for sq := range 64 {
 			PSQ[engine.WHITE][piece][sq] = material + pst[piece][sq^56]
 			PSQ[engine.BLACK][piece][sq] = material + pst[piece][sq]

@@ -35,7 +35,7 @@ func main() {
 	}
 
 	if *perft {
-		fen := engine.Tests[0].FEN
+		fen := engine.STARTPOS
 		pos := engine.FromFen(fen)
 		start := time.Now()
 
@@ -67,7 +67,7 @@ func main() {
 
 	} else if *divide {
 
-		fen := engine.Tests[0].FEN
+		fen := engine.STARTPOS
 		pos := engine.FromFen(fen)
 		nodes := pos.PerftDivide(*depth)
 

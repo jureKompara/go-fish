@@ -36,9 +36,7 @@ func (p *Position) Perft(depth int) uint64 {
 	if depth == 0 {
 		return 1
 	}
-	moves := p.Movebuff[p.Ply][:]
-	n := p.GenMoves(moves)
-	moves = moves[:n]
+	moves := p.GenMoves()
 	nodes := uint64(0)
 	for _, move := range moves {
 		p.Make(move)
@@ -50,12 +48,10 @@ func (p *Position) Perft(depth int) uint64 {
 
 // bulk counting at the leaves
 func (p *Position) Bulk(depth int) uint64 {
-	moves := p.Movebuff[p.Ply][:]
-	n := p.GenMoves(moves)
-	moves = moves[:n]
+	moves := p.GenMoves()
 	// base case depth==1 we just count legal moves
 	if depth <= 1 {
-		return uint64(n)
+		return uint64(len(moves))
 	}
 	nodes := uint64(0)
 	for _, move := range moves {
@@ -72,9 +68,7 @@ func (p *Position) PerftDivide(depth int) uint64 {
 	if depth == 0 {
 		return 1
 	}
-	moves := p.Movebuff[p.Ply][:]
-	n := p.GenMoves(moves)
-	moves = moves[:n]
+	moves := p.GenMoves()
 	nodes := uint64(0)
 	for _, move := range moves {
 		snapCR := p.castleRights
