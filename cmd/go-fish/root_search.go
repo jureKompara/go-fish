@@ -11,18 +11,18 @@ const MATE int32 = 1000000
 
 func RootSearch(p *engine.Position, options Options) engine.Move {
 
+	start := time.Now()
 	var timeBuget int
 
 	if options.movetime != 0 {
-		timeBuget = options.movetime
+		timeBuget = options.movetime / 2
 	} else if p.Stm == engine.WHITE {
-		timeBuget = options.wtime/20 + options.winc
+		timeBuget = options.wtime/20 + options.winc/2
 	} else {
-		timeBuget = options.btime/20 + options.binc
+		timeBuget = options.btime/20 + options.binc/2
 	}
-	timeBuget = min(timeBuget, 9000)
 
-	deadline := time.Now().Add(time.Duration(timeBuget) * time.Millisecond)
+	deadline := start.Add(time.Duration(timeBuget) * time.Millisecond)
 
 	moves := p.GenMoves()
 

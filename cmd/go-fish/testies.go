@@ -21,13 +21,14 @@ var testFens = []string{
 func Test(depth *int) {
 
 	options := Options{
-		movetime: 1500,
+		movetime: 100000000000,
 		depth:    *depth,
 	}
 
 	fmt.Println("depth: ", options.depth)
 
 	var fullDuration time.Duration
+
 	for _, fen := range testFens {
 		p := engine.FromFen(fen)
 
@@ -40,6 +41,7 @@ func Test(depth *int) {
 		start := time.Now()
 		move := RootSearch(&p, options).Uci()
 		elapsed := time.Since(start)
+		engine.Killers = [512][2]engine.Move{}
 		fullDuration += elapsed
 
 		nps := float64(abNodes+qNodes) / elapsed.Seconds()
@@ -49,9 +51,9 @@ func Test(depth *int) {
 		fmt.Println("time: ", elapsed)
 		fmt.Printf("info nodes %d qnodes %d @%.2fM nps\n", abNodes, qNodes, nps/1_000_000)
 
-		fmt.Println("ttProbes:", TTProbe)
-		fmt.Println("TT hit rate:   ", float64(TTHit)/float64(TTProbe)*100, "%")
-		fmt.Println("TT cutoff rate:", float64(ttCutoffs)/float64(TTHit)*100, "%")
+		//fmt.Println("ttProbes:", TTProbe)
+		//fmt.Println("TT hit rate:   ", float64(TTHit)/float64(TTProbe)*100, "%")
+		//fmt.Println("TT cutoff rate:", float64(ttCutoffs)/float64(TTHit)*100, "%")
 
 		fmt.Println("---------------------------------------------------------------")
 	}

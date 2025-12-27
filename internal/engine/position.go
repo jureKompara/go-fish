@@ -124,3 +124,18 @@ func (p *Position) VerifyZobrist() bool {
 	p.GenerateZobrist()
 	return p.Hash == old
 }
+
+func (p *Position) Is3Fold() bool {
+	if p.HalfMove >= 8 {
+		count := 0
+		for i := p.Ply - 2; i >= max(0, p.Ply-p.HalfMove); i -= 2 {
+			if p.Hash == p.HashHistory[i] {
+				count++
+				if count == 2 {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}

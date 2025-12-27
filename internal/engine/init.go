@@ -89,6 +89,7 @@ func init() {
 		maskB[i] = genBishopMask(i)
 	}
 	genCastleMask()
+	fillMvv()
 
 	//fills the line and between lookup table for pins
 	for sq1 := range 64 {

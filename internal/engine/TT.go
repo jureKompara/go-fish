@@ -1,6 +1,6 @@
 package engine
 
-const TTSize = 22
+const TTSize = 23
 
 var TT [1 << TTSize]TTEntry
 var IndexMask = (uint64(1) << TTSize) - 1

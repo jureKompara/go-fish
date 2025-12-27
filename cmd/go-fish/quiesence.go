@@ -6,17 +6,10 @@ import (
 	"sort"
 )
 
-const QDEPTH = 6
+func Q(p *engine.Position, alpha, beta int32) int32 {
 
-func Q(p *engine.Position, alpha, beta int32, qDepth int) int32 {
-
-	if is3Fold(p) {
+	if p.Is3Fold() {
 		return 0
-	}
-
-	//max qDepth-> static eval
-	if qDepth <= 0 {
-		return eval.Pst(p)
 	}
 	qNodes++
 
@@ -31,7 +24,7 @@ func Q(p *engine.Position, alpha, beta int32, qDepth int) int32 {
 
 		for _, m := range moves {
 			p.Make(m)
-			score := -Q(p, -beta, -alpha, qDepth-1)
+			score := -Q(p, -beta, -alpha)
 			p.Unmake(m)
 
 			if score > best {
@@ -76,12 +69,12 @@ func Q(p *engine.Position, alpha, beta int32, qDepth int) int32 {
 		gain := eval.Points[p.Board[m.To()]]
 
 		// delta prune
-		if stand+gain+100 < alpha {
+		if stand+gain+50 < alpha {
 			continue
 		}
 
 		p.Make(m)
-		score := -Q(p, -beta, -alpha, qDepth-1)
+		score := -Q(p, -beta, -alpha)
 		p.Unmake(m)
 
 		if score >= beta {

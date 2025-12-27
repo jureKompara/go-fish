@@ -2,7 +2,8 @@ package engine
 
 import "math/bits"
 
-// returns all pseudo legal moves in the position
+// returns all evasions
+// asumes checkers is non 0
 func (p *Position) GenEvasions(checkers uint64) []Move {
 	us := p.Stm
 	enemy := us ^ 1
@@ -10,7 +11,7 @@ func (p *Position) GenEvasions(checkers uint64) []Move {
 
 	moves := p.Movebuff[p.Ply][:]
 
-	if checkers&(checkers-1) == 0 {
+	if checkers&(checkers-1) == 0 { //only one checker
 		c := bits.TrailingZeros64(checkers)
 		// Knight/pawn check: ONLY capture the checker
 		if has(p.PieceBB[enemy][PAWN]|p.PieceBB[enemy][KNIGHT], c) {

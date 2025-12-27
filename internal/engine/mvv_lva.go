@@ -1,17 +1,31 @@
 package engine
 
+var points = [6]int32{300, 300, 500, 900, 100, 1000}
+
 // victim values indexed by your piece enum (N,B,R,Q,P,K)
 // index 6 is for EP
-var mvv = [7]int32{300, 300, 500, 900, 100, 0, 0}
+var mvv [6][5]int32
 
 func MvvLvaScore(p *Position, m Move) int32 {
-
-	score := 10*mvv[p.Board[m.To()]] - mvv[p.Board[m.From()]]
-
-	if IsPromo(m.Flags()) {
-		return 100000
+	flags := m.Flags()
+	if IsPromo(flags) {
+		if IsCapture(flags) {
+			return mvv[PAWN][p.Board[m.To()]] + 10000
+		}
+		return 10000
 	}
 
-	//victim*10-attacker
-	return score
+	if flags == EP {
+		return 900
+	}
+
+	return mvv[p.Board[m.From()]][p.Board[m.To()]]
+}
+
+func fillMvv() {
+	for attacker := range 6 {
+		for victim := range 5 {
+			mvv[attacker][victim] = 10*points[victim] - points[attacker]
+		}
+	}
 }

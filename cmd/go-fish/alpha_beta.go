@@ -15,14 +15,16 @@ const (
 )
 
 func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
+	abNodes++
 
 	//repetition check
-	if is3Fold(p) {
+	if p.Is3Fold() {
 		return 0
 	}
 
 	alpha = max(alpha, -MATE+int32(p.Ply))
 	beta = min(beta, MATE-int32(p.Ply))
+
 	if alpha >= beta {
 		return alpha
 	}
@@ -32,8 +34,8 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	entry := engine.TT[index]
 	TTProbe++
 
-	hit := entry.Hash == p.Hash
-	if hit && entry.Depth >= uint8(depth) {
+	isHit := entry.Hash == p.Hash
+	if isHit && entry.Depth >= uint8(depth) {
 		ttScore := loadScore(entry.Score, p.Ply)
 		TTHit++
 		switch entry.BoundType {
@@ -55,16 +57,8 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 
 	//we start quiesence at leaf nodes
 	if depth == 0 {
-		return Q(p, alpha, beta, QDEPTH)
+		return Q(p, alpha, beta)
 	}
-
-	originalAlpha := alpha
-	originalBeta := beta
-
-	abNodes++
-
-	best := -INF
-	var bestMove engine.Move
 
 	moves := p.GenMoves()
 
@@ -97,13 +91,49 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		})
 	}
 
-	first := true
-	for _, m := range moves {
+	for i := write; i < len(moves); i++ {
+		if engine.Killers[p.Ply][0] == moves[i] {
+			moves[write], moves[i] = moves[i], moves[write]
+			write++
+			break
+		}
+	}
+	for i := write; i < len(moves); i++ {
+		if engine.Killers[p.Ply][1] == moves[i] {
+			moves[write], moves[i] = moves[i], moves[write]
+			write++
+			break
+		}
+	}
+
+	for i := write; i < len(moves)-1 && i < write+0; i++ {
+		ito := moves[i].To()
+		ifr := moves[i].From()
+		bst := engine.History[p.Stm][ifr][ito]
+		bstI := i
+		for j := i + 1; j < len(moves); j++ {
+			jto := moves[j].To()
+			jfr := moves[j].From()
+			hj := engine.History[p.Stm][jfr][jto]
+			if hj > bst {
+				bst = hj
+				bstI = j
+			}
+
+		}
+		moves[i], moves[bstI] = moves[bstI], moves[i]
+	}
+
+	originalAlpha := alpha
+	originalBeta := beta
+	best := -INF
+	var bestMove engine.Move
+
+	for i, m := range moves {
 		p.Make(m)
 		var score int32
-		if first {
+		if i == 0 {
 			score = -AB(p, -beta, -alpha, depth-1)
-			first = false
 		} else {
 			// null-window
 			score = -AB(p, -alpha-1, -alpha, depth-1)
@@ -122,6 +152,12 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 			alpha = score
 		}
 		if alpha >= beta {
+			k1 := engine.Killers[p.Ply][0]
+			if !engine.IsCapture(m.Flags()) && k1 != m {
+				engine.Killers[p.Ply][1] = k1
+				engine.Killers[p.Ply][0] = m
+				engine.History[p.Stm][m.From()][m.To()] += depth * depth
+			}
 			break
 		}
 	}
@@ -134,6 +170,12 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		}
 	}
 
+	if isHit && entry.Depth > uint8(depth) {
+		// if old entry is deeper, keep it entirely
+		engine.TT[index].HashMove = bestMove
+		return best
+	}
+
 	boundType := EXACT
 	if best <= originalAlpha {
 		boundType = UPPER
@@ -141,29 +183,12 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		boundType = LOWER
 	}
 
-	if entry.Hash == p.Hash {
-		// same position: always refresh best move (and age if you have it)
-		entry.HashMove = bestMove
-
-		// only overwrite score/depth/flag if new info is at least as deep
-		if uint8(depth) < entry.Depth {
-			engine.TT[index].Score = loadScore(best, p.Ply)
-			engine.TT[index].BoundType = boundType
-			return best
-		}
-		// else fallthrough to full overwrite
-	} else if entry.Hash != 0 && entry.Depth > uint8(depth) {
-		// collision and old is deeper: keep old
-		return best
-	}
-
 	engine.TT[index] = engine.TTEntry{
 		Hash:      p.Hash,
 		Depth:     uint8(depth),
 		Score:     storeScore(best, p.Ply),
 		BoundType: boundType,
-		HashMove:  bestMove,
-	}
+		HashMove:  bestMove}
 
 	return best
 }
@@ -186,19 +211,4 @@ func loadScore(score int32, ply int) int32 {
 		return score + int32(ply)
 	}
 	return score
-}
-
-func is3Fold(p *engine.Position) bool {
-	if p.HalfMove >= 8 {
-		count := 0
-		for i := p.Ply - 2; i >= max(0, p.Ply-p.HalfMove); i -= 2 {
-			if p.Hash == p.HashHistory[i] {
-				count++
-				if count == 2 {
-					return true
-				}
-			}
-		}
-	}
-	return false
 }

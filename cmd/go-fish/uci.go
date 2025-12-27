@@ -41,13 +41,11 @@ func handleUci(req string, p *engine.Position) {
 			fmt.Println("bestmove", RootSearch(p, options).Uci())
 			elapsed := time.Since(start).Seconds()
 
-			//fmt.Println("ttCutoffs: ", ttCutoffs)
-			//fmt.Println("ttHits: ", TTHit)
-			//fmt.Println("ttProbes: ", TTProbe)
-
 			nps := int(float64(abNodes+qNodes) / elapsed)
 
 			fmt.Printf("info nodes %d qnodes %d nps %d\n", abNodes, qNodes, nps)
+			engine.Killers = [512][2]engine.Move{}
+			engine.History = [2][64][64]int{}
 			return
 		}
 	case "d":
@@ -149,9 +147,9 @@ func optionsParser(options string) Options {
 	out := Options{
 		wtime:    900000000,
 		btime:    900000000,
-		depth:    128,
+		depth:    64,
 		movetime: 0,
-		nodes:    900000000,
+		nodes:    0,
 		winc:     0,
 		binc:     0,
 	}
@@ -166,7 +164,7 @@ func optionsParser(options string) Options {
 		case "btime":
 			out.btime, _ = strconv.Atoi(tokens[i+1])
 		case "movetime":
-			out.depth, _ = strconv.Atoi(tokens[i+1])
+			out.movetime, _ = strconv.Atoi(tokens[i+1])
 
 		case "winc":
 			out.winc, _ = strconv.Atoi(tokens[i+1])
