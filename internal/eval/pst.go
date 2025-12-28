@@ -2,7 +2,21 @@ package eval
 
 import "go-fish/internal/engine"
 
-var Points = [7]int32{310, 320, 500, 900, 100, 0, 100}
+const PawnValue int32 = 100
+const knightValue int32 = 310
+const BishopValue int32 = 320
+const RookValue int32 = 500
+const QueenValue int32 = 900
+const KingValue int32 = 0
+
+var Points = [6]int32{
+	knightValue,
+	BishopValue,
+	RookValue,
+	QueenValue,
+	PawnValue,
+	KingValue,
+}
 
 var PSQ [2][6][64]int32
 
@@ -11,52 +25,55 @@ var PSQ [2][6][64]int32
 func Pst(p *engine.Position) int32 {
 	var score int32 = 0
 
+	black := p.PieceBB[engine.BLACK]
+	white := p.PieceBB[engine.WHITE]
+
 	//knights
-	bb := p.PieceBB[engine.WHITE][engine.KNIGHT]
+	bb := white[engine.KNIGHT]
 	for bb != 0 {
 		score += PSQ[engine.WHITE][engine.KNIGHT][engine.PopLSB(&bb)]
 	}
-	bb = p.PieceBB[engine.BLACK][engine.KNIGHT]
+	bb = black[engine.KNIGHT]
 	for bb != 0 {
 		score -= PSQ[engine.BLACK][engine.KNIGHT][engine.PopLSB(&bb)]
 	}
 
 	//bishops
-	bb = p.PieceBB[engine.WHITE][engine.BISHOP]
+	bb = white[engine.BISHOP]
 	for bb != 0 {
 		score += PSQ[engine.WHITE][engine.BISHOP][engine.PopLSB(&bb)]
 	}
-	bb = p.PieceBB[engine.BLACK][engine.BISHOP]
+	bb = black[engine.BISHOP]
 	for bb != 0 {
 		score -= PSQ[engine.BLACK][engine.BISHOP][engine.PopLSB(&bb)]
 	}
 
 	//rooks
-	bb = p.PieceBB[engine.WHITE][engine.ROOK]
+	bb = white[engine.ROOK]
 	for bb != 0 {
 		score += PSQ[engine.WHITE][engine.ROOK][engine.PopLSB(&bb)]
 	}
-	bb = p.PieceBB[engine.BLACK][engine.ROOK]
+	bb = black[engine.ROOK]
 	for bb != 0 {
 		score -= PSQ[engine.BLACK][engine.ROOK][engine.PopLSB(&bb)]
 	}
 
 	//queens
-	bb = p.PieceBB[engine.WHITE][engine.QUEEN]
+	bb = white[engine.QUEEN]
 	for bb != 0 {
 		score += PSQ[engine.WHITE][engine.QUEEN][engine.PopLSB(&bb)]
 	}
-	bb = p.PieceBB[engine.BLACK][engine.QUEEN]
+	bb = black[engine.QUEEN]
 	for bb != 0 {
 		score -= PSQ[engine.BLACK][engine.QUEEN][engine.PopLSB(&bb)]
 	}
 
 	//pawns
-	bb = p.PieceBB[engine.WHITE][engine.PAWN]
+	bb = white[engine.PAWN]
 	for bb != 0 {
 		score += PSQ[engine.WHITE][engine.PAWN][engine.PopLSB(&bb)]
 	}
-	bb = p.PieceBB[engine.BLACK][engine.PAWN]
+	bb = black[engine.PAWN]
 	for bb != 0 {
 		score -= PSQ[engine.BLACK][engine.PAWN][engine.PopLSB(&bb)]
 	}

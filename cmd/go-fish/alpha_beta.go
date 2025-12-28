@@ -2,7 +2,6 @@ package main
 
 import (
 	"go-fish/internal/engine"
-	"sort"
 )
 
 var abNodes uint64
@@ -76,36 +75,27 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	}
 
 	//partition captures first
-	write := off
-	for i := off; i < len(moves); i++ {
-		if engine.IsCapture(moves[i].Flags()) {
-			moves[write], moves[i] = moves[i], moves[write]
-			write++
-		}
-	}
+	write := off + partitionSort(p, moves[off:])
 
-	//only sort if there is more than 1 capture
-	if write-off > 1 {
-		sort.Slice(moves[off:write], func(i, j int) bool {
-			return engine.MvvLvaScore(p, moves[off+i]) > engine.MvvLvaScore(p, moves[off+j])
-		})
-	}
-
+	k := engine.Killers[p.Ply][0]
 	for i := write; i < len(moves); i++ {
-		if engine.Killers[p.Ply][0] == moves[i] {
-			moves[write], moves[i] = moves[i], moves[write]
-			write++
-			break
-		}
-	}
-	for i := write; i < len(moves); i++ {
-		if engine.Killers[p.Ply][1] == moves[i] {
+		if k == moves[i] {
 			moves[write], moves[i] = moves[i], moves[write]
 			write++
 			break
 		}
 	}
 
+	k = engine.Killers[p.Ply][1]
+	for i := write; i < len(moves); i++ {
+		if k == moves[i] {
+			moves[write], moves[i] = moves[i], moves[write]
+			write++
+			break
+		}
+	}
+
+	//sorts quiets with history(disabled for now)
 	for i := write; i < len(moves)-1 && i < write+0; i++ {
 		ito := moves[i].To()
 		ifr := moves[i].From()
@@ -171,7 +161,6 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	}
 
 	if isHit && entry.Depth > uint8(depth) {
-		// if old entry is deeper, keep it entirely
 		engine.TT[index].HashMove = bestMove
 		return best
 	}

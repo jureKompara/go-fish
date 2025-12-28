@@ -9,10 +9,7 @@ var mvv [6][5]int32
 func MvvLvaScore(p *Position, m Move) int32 {
 	flags := m.Flags()
 	if IsPromo(flags) {
-		if IsCapture(flags) {
-			return mvv[PAWN][p.Board[m.To()]] + 10000
-		}
-		return 10000
+		return mvv[PAWN][p.Board[m.To()]] + 10000
 	}
 
 	if flags == EP {

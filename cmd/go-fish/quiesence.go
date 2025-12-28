@@ -3,7 +3,6 @@ package main
 import (
 	"go-fish/internal/engine"
 	"go-fish/internal/eval"
-	"sort"
 )
 
 func Q(p *engine.Position, alpha, beta int32) int32 {
@@ -22,6 +21,8 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 		best := -INF
 		moves := p.GenEvasions(checkers)
 
+		partitionSort(p, moves)
+
 		for _, m := range moves {
 			p.Make(m)
 			score := -Q(p, -beta, -alpha)
@@ -34,7 +35,7 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 				alpha = score
 			}
 			if alpha >= beta {
-				return alpha
+				return beta
 			}
 		}
 
@@ -57,16 +58,61 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 		alpha = stand
 	}
 
+	//captures + promotions
 	moves := p.GenTactics()
 
-	sort.Slice(moves, func(i, j int) bool {
-		return engine.MvvLvaScore(p, moves[i]) > engine.MvvLvaScore(p, moves[j])
-	})
+	//pushed promos to the end
+	//and returns captures count
+	capCount := tailQuiets(moves)
 
-	for _, m := range moves {
+	for i := range capCount {
+
+		best := i
+		bestScore := engine.MvvLvaScore(p, moves[i])
+		for j := i + 1; j < capCount; j++ {
+			s := engine.MvvLvaScore(p, moves[j])
+			if s > bestScore {
+				bestScore = s
+				best = j
+			}
+		}
+		moves[i], moves[best] = moves[best], moves[i]
+
+		m := moves[i]
 
 		//what we gain from the capture
-		gain := eval.Points[p.Board[m.To()]]
+		gain := int32(0)
+
+		flags := m.Flags()
+		if flags == engine.EP {
+			gain = eval.PawnValue
+		} else {
+			gain = eval.Points[p.Board[m.To()]]
+			if engine.IsPromo(flags) {
+				gain += eval.Points[engine.Promo(flags)] - eval.PawnValue
+			}
+		}
+
+		// delta prune
+		if stand+gain+50 < alpha {
+			continue
+		}
+
+		p.Make(m)
+		score := -Q(p, -beta, -alpha)
+		p.Unmake(m)
+
+		if score >= beta {
+			return beta
+		}
+		if score > alpha {
+			alpha = score
+		}
+	}
+
+	for _, m := range moves[capCount:] {
+		//what we gain from the capture
+		gain := eval.Points[engine.Promo(m.Flags())] - eval.PawnValue
 
 		// delta prune
 		if stand+gain+50 < alpha {

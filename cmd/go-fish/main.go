@@ -23,6 +23,7 @@ func main() {
 	divide := flag.Bool("divide", false, "run perftDevide")
 	test := flag.Bool("test", false, "run test positions for debuging search")
 	depth := flag.Int("depth", 5, "set depth for search/perft")
+	moveTime := flag.Int("time", 5000, "set time for search")
 	flag.Parse()
 
 	//enables profiling
@@ -63,7 +64,7 @@ func main() {
 
 	} else if *test {
 
-		Test(depth)
+		Test(*depth, *moveTime)
 
 	} else if *divide {
 

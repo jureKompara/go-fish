@@ -41,7 +41,7 @@ func (p *Position) GenEvasions(checkers uint64) []Move {
 		}
 	}
 
-	n := p.genKingMoves(moves, 0)
+	n := 0
 	bb := p.PieceBB[us][KNIGHT]
 	for bb != 0 {
 		sq := PopLSB(&bb)
@@ -64,6 +64,7 @@ func (p *Position) GenEvasions(checkers uint64) []Move {
 	}
 
 	n = p.genPawnMoves3(moves, n)
+	n = p.genKingMoves(moves, n)
 	return moves[:n]
 }
 

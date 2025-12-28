@@ -26,8 +26,12 @@ func RootSearch(p *engine.Position, options Options) engine.Move {
 
 	moves := p.GenMoves()
 
-	if len(moves) == 0 {
+	n := len(moves)
+	switch n {
+	case 0:
 		return 0
+	case 1:
+		return moves[0]
 	}
 
 	prev := int32(0)

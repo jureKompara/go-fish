@@ -28,7 +28,6 @@ func handleUci(req string, p *engine.Position) {
 
 	case "go":
 		{
-
 			options := optionsParser(rest)
 			//reset diagnostic values
 			abNodes = 0
@@ -45,7 +44,6 @@ func handleUci(req string, p *engine.Position) {
 
 			fmt.Printf("info nodes %d qnodes %d nps %d\n", abNodes, qNodes, nps)
 			engine.Killers = [512][2]engine.Move{}
-			engine.History = [2][64][64]int{}
 			return
 		}
 	case "d":
@@ -107,7 +105,7 @@ func playMoves(p *engine.Position, tokens []string) {
 			}
 		}
 		if !found {
-			fmt.Printf("[Err: %v is not legal]\n", t)
+			fmt.Printf("[Err: %s is not legal]\n", t)
 		}
 	}
 }
