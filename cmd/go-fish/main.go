@@ -34,7 +34,6 @@ func main() {
 		f, _ := os.Create("cpu.out")
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
-
 	}
 
 	if *perft {

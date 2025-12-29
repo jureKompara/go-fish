@@ -8,10 +8,6 @@ import (
 func Q(p *engine.Position, alpha, beta int32) int32 {
 	qNodes++
 
-	if p.Is3Fold() {
-		return 0
-	}
-
 	checkers := p.Checkers(p.Kings[p.Stm], p.Stm^1)
 
 	if checkers != 0 {
@@ -24,7 +20,7 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 			return -MATE + int32(p.Ply)
 		}
 
-		partitionSort(p, moves)
+		headCaptures(moves)
 
 		best := -INF
 

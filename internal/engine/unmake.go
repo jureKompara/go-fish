@@ -16,9 +16,9 @@ func (p *Position) Unmake(move Move) {
 	flags := move.Flags()
 	isPromo := IsPromo(flags)
 	to := move.To()
-	piece := p.Board[to]
-	if isPromo {
-		piece = PAWN
+	var piece uint8 = PAWN
+	if !isPromo {
+		piece = p.Board[to]
 	}
 
 	from := move.From()
@@ -43,18 +43,18 @@ func (p *Position) Unmake(move Move) {
 	if flags == EP {
 
 		behind := to - 8 + 16*us
+		p.Board[behind] = PAWN
 		behindMask := uint64(1) << behind
 		p.PieceBB[enemy][PAWN] ^= behindMask
 		p.ColorOcc[enemy] ^= behindMask
 		p.Occ ^= behindMask
-		p.Board[behind] = PAWN
 
 	} else if IsCapture(flags) {
 		capture := state.capture
+		p.Board[to] = capture
 		p.PieceBB[enemy][capture] ^= toMask
 		p.ColorOcc[enemy] ^= toMask
 		p.Occ ^= toMask
-		p.Board[to] = capture
 	}
 
 	if piece == KING {

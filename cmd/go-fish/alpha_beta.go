@@ -68,62 +68,61 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	var bestMove engine.Move
 
 	if n > 0 {
+		var score int32
+
 		//hash move is first!
 		off := 0
 		if p.Hash == entry.Hash {
 			hashMove := entry.HashMove
-			for i, m := range moves {
-				if m == hashMove {
+			for i := range moves {
+				if moves[i] == hashMove {
 					off = 1
 					moves[0], moves[i] = moves[i], moves[0]
+					m := moves[0]
+
+					p.Make(m)
+					score = -AB(p, -beta, -alpha, depth-1)
+					p.Unmake(m)
+
+					if score > best {
+						best = score
+						bestMove = m
+					}
+					if score > alpha {
+						alpha = score
+					}
+					if alpha >= beta {
+						k0 := engine.Killers[p.Ply][0]
+						if !engine.IsCapture(m.Flags()) && k0 != m {
+							engine.Killers[p.Ply][1] = k0
+							engine.Killers[p.Ply][0] = m
+							engine.History[p.Stm][m.From()][m.To()] += depth * depth
+						}
+						goto Jmp
+					}
 					break
 				}
 			}
 		}
 
 		//partition captures first
-		write := off + partitionSort(p, moves[off:])
+		write := off + headCaptures(moves[off:])
 
-		k := engine.Killers[p.Ply][0]
-		for i := write; i < n; i++ {
-			if k == moves[i] {
-				moves[write], moves[i] = moves[i], moves[write]
-				write++
-				break
-			}
-		}
-
-		k = engine.Killers[p.Ply][1]
-		for i := write; i < n; i++ {
-			if k == moves[i] {
-				moves[write], moves[i] = moves[i], moves[write]
-				write++
-				break
-			}
-		}
-
-		//sorts quiets with history(disabled for now)
-		for i := write; i < n-1 && i < write+0; i++ {
-			ito := moves[i].To()
-			ifr := moves[i].From()
-			bst := engine.History[p.Stm][ifr][ito]
-			bstI := i
-			for j := i + 1; j < n; j++ {
-				jto := moves[j].To()
-				jfr := moves[j].From()
-				hj := engine.History[p.Stm][jfr][jto]
-				if hj > bst {
-					bst = hj
-					bstI = j
+		//capture loop
+		for i := off; i < write; i++ {
+			bestIdx := i
+			bestScore := engine.MvvLvaScore(p, moves[i])
+			for j := i + 1; j < write; j++ {
+				s := engine.MvvLvaScore(p, moves[j])
+				if s > bestScore {
+					bestScore = s
+					bestIdx = j
 				}
-
 			}
-			moves[i], moves[bstI] = moves[bstI], moves[i]
-		}
+			moves[i], moves[bestIdx] = moves[bestIdx], moves[i]
+			m := moves[i]
 
-		for i, m := range moves {
 			p.Make(m)
-			var score int32
 			if i == 0 {
 				score = -AB(p, -beta, -alpha, depth-1)
 			} else {
@@ -144,21 +143,91 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 				alpha = score
 			}
 			if alpha >= beta {
-				k1 := engine.Killers[p.Ply][0]
-				if !engine.IsCapture(m.Flags()) && k1 != m {
-					engine.Killers[p.Ply][1] = k1
+				goto Jmp
+			}
+		}
+
+		quietsStart := write
+		k := engine.Killers[p.Ply][0]
+		for i := write; i < n; i++ {
+			if k == moves[i] {
+				moves[write], moves[i] = moves[i], moves[write]
+				write++
+				break
+			}
+		}
+
+		k = engine.Killers[p.Ply][1]
+		for i := write; i < n; i++ {
+			if k == moves[i] {
+				moves[write], moves[i] = moves[i], moves[write]
+				write++
+				break
+			}
+		}
+
+		//quiets loop
+		for i := quietsStart; i < n; i++ {
+			m := moves[i]
+			p.Make(m)
+			if i == 0 {
+				score = -AB(p, -beta, -alpha, depth-1)
+			} else {
+				// null-window
+				score = -AB(p, -alpha-1, -alpha, depth-1)
+				if score > alpha && score < beta {
+					// re-search
+					score = -AB(p, -beta, -alpha, depth-1)
+				}
+			}
+			p.Unmake(m)
+
+			if score > best {
+				best = score
+				bestMove = m
+			}
+			if score > alpha {
+				alpha = score
+			}
+			if alpha >= beta {
+				k0 := engine.Killers[p.Ply][0]
+				if k0 != m {
+					engine.Killers[p.Ply][1] = k0
 					engine.Killers[p.Ply][0] = m
 					engine.History[p.Stm][m.From()][m.To()] += depth * depth
 				}
 				break
 			}
 		}
+
+		//sorts quiets with history(disabled for now)
+		/*for i := write; i < n; i++ {
+			ito := moves[i].To()
+			ifr := moves[i].From()
+			bst := engine.History[p.Stm][ifr][ito]
+			bstI := i
+			for j := i + 1; j < n; j++ {
+				jto := moves[j].To()
+				jfr := moves[j].From()
+				hj := engine.History[p.Stm][jfr][jto]
+				if hj > bst {
+					bst = hj
+					bstI = j
+				}
+
+			}
+			moves[i], moves[bstI] = moves[bstI], moves[i]
+		}*/
+
 	} else if p.InCheck() {
+		//checkmate
 		best = -MATE + int32(p.Ply)
 	} else {
+		//stalemate
 		best = 0
 	}
 
+Jmp:
 	if isHit && entry.Depth > uint8(depth) {
 		return best
 	}

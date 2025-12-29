@@ -67,7 +67,7 @@ func (p *Position) Make(move Move) {
 	}
 
 	if p.epSquare != 64 { // REMOVE old EP
-		p.Hash ^= zobristEP[file(p.epSquare)]
+		p.Hash ^= zobristEP[p.epSquare&7]
 		p.epSquare = 64
 	}
 
