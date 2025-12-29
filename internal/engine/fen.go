@@ -80,7 +80,7 @@ func FromFen(fen string) Position {
 	var pieceBB [2][6]uint64
 	var colorOcc [2]uint64
 	var occ uint64
-	var b [64]uint8
+	var mailbox [64]uint8
 	var toMove int
 	var castleRights uint8
 	var epSquare int = 64 //sentinel value
@@ -98,7 +98,7 @@ func FromFen(fen string) Position {
 		}
 		if '1' <= c && c <= '8' {
 			for i := range int(c - '0') {
-				b[rank*8+file+i] = EMPTY
+				mailbox[rank*8+file+i] = EMPTY
 			}
 			file += int(c) - '0'
 			continue
@@ -112,7 +112,7 @@ func FromFen(fen string) Position {
 		pieceType := CharToPiece[c]
 		sq := rank*8 + file
 
-		b[sq] = uint8(pieceType)
+		mailbox[sq] = uint8(pieceType)
 
 		pieceBB[color][pieceType] |= (1 << sq)
 		if pieceType == KING {
@@ -159,7 +159,7 @@ func FromFen(fen string) Position {
 		PieceBB:      pieceBB,
 		ColorOcc:     colorOcc,
 		Occ:          occ,
-		Board:        b,
+		Board:        mailbox,
 		Stm:          toMove,
 		castleRights: castleRights,
 		epSquare:     epSquare,

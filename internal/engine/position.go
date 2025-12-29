@@ -115,7 +115,7 @@ func (p *Position) GenerateZobrist() {
 	p.Hash ^= zobristCastle[p.castleRights]
 
 	if p.epSquare != 64 {
-		p.Hash ^= zobristEP[p.epSquare&7]
+		p.Hash ^= zobristEP[file(p.epSquare)]
 	}
 }
 

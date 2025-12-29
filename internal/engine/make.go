@@ -34,12 +34,12 @@ func (p *Position) Make(move Move) {
 	p.Board[to] = piece
 	p.Hash ^= zobristPiece[us][piece][to]
 
-	if capture == EMPTY {
-		p.Occ ^= frMask | toMask // empty-to: toggle both
-	} else {
+	if capture == EMPTY { //not a capture
+		p.Occ ^= frMask | toMask // empty-to: toggle both fr and to
+	} else { //capture
 		p.PieceBB[enemy][capture] ^= toMask
 		p.ColorOcc[enemy] ^= toMask
-		p.Occ ^= frMask // capture: only fr becomes empty
+		p.Occ ^= frMask // capture: only toggle fr
 		p.Hash ^= zobristPiece[enemy][capture][to]
 	}
 
@@ -67,36 +67,35 @@ func (p *Position) Make(move Move) {
 	}
 
 	if p.epSquare != 64 { // REMOVE old EP
-		p.Hash ^= zobristEP[p.epSquare&7]
+		p.Hash ^= zobristEP[file(p.epSquare)]
 		p.epSquare = 64
 	}
 
-	if flags != QUIET && flags != CAPTURE {
-		//for both double pushes and ep captures the relevant squre
-		//is the one behind 'to' so we can use it for setting epSquare
-		//after a double push or clearing the pawn after an ep capture
+	//for both double pushes and ep captures the relevant squre
+	//is the one behind 'to' so we can use it for setting epSquare
+	//after a double push or clearing the pawn after an ep capture
+	switch {
+	case flags == EP:
 		ep := to - 8 + 16*us
-		switch {
-		case flags == EP:
-			epMask := uint64(1) << ep
-			p.PieceBB[enemy][PAWN] ^= epMask
-			p.ColorOcc[enemy] ^= epMask
-			p.Occ ^= epMask
-			p.Board[ep] = EMPTY
-			p.Hash ^= zobristPiece[enemy][PAWN][ep]
+		epMask := uint64(1) << ep
+		p.PieceBB[enemy][PAWN] ^= epMask
+		p.ColorOcc[enemy] ^= epMask
+		p.Occ ^= epMask
+		p.Board[ep] = EMPTY
+		p.Hash ^= zobristPiece[enemy][PAWN][ep]
 
-		case flags == DOUBLE:
-			p.epSquare = ep
-			p.Hash ^= zobristEP[ep&7]
+	case flags == DOUBLE:
+		ep := to - 8 + 16*us
+		p.epSquare = ep
+		p.Hash ^= zobristEP[ep&7]
 
-		case IsPromo(flags):
-			promo := Promo(flags)
-			p.PieceBB[us][PAWN] ^= toMask
-			p.PieceBB[us][promo] ^= toMask
-			p.Board[to] = promo
-			p.Hash ^= zobristPiece[us][PAWN][to]
-			p.Hash ^= zobristPiece[us][promo][to]
-		}
+	case IsPromo(flags):
+		promo := Promo(flags)
+		p.PieceBB[us][PAWN] ^= toMask
+		p.PieceBB[us][promo] ^= toMask
+		p.Board[to] = promo
+		p.Hash ^= zobristPiece[us][PAWN][to]
+		p.Hash ^= zobristPiece[us][promo][to]
 	}
 
 	//castling rights when rooks move or get capped

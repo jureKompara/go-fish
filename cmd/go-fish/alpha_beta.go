@@ -60,108 +60,106 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	}
 
 	moves := p.GenMoves()
-
-	//hash move is first!
-	off := 0
-	if p.Hash == entry.Hash {
-		hashMove := entry.HashMove
-		for i, m := range moves {
-			if m == hashMove {
-				off = 1
-				moves[0], moves[i] = moves[i], moves[0]
-				break
-			}
-		}
-	}
-
-	//partition captures first
-	write := off + partitionSort(p, moves[off:])
-
-	k := engine.Killers[p.Ply][0]
-	for i := write; i < len(moves); i++ {
-		if k == moves[i] {
-			moves[write], moves[i] = moves[i], moves[write]
-			write++
-			break
-		}
-	}
-
-	k = engine.Killers[p.Ply][1]
-	for i := write; i < len(moves); i++ {
-		if k == moves[i] {
-			moves[write], moves[i] = moves[i], moves[write]
-			write++
-			break
-		}
-	}
-
-	//sorts quiets with history(disabled for now)
-	for i := write; i < len(moves)-1 && i < write+0; i++ {
-		ito := moves[i].To()
-		ifr := moves[i].From()
-		bst := engine.History[p.Stm][ifr][ito]
-		bstI := i
-		for j := i + 1; j < len(moves); j++ {
-			jto := moves[j].To()
-			jfr := moves[j].From()
-			hj := engine.History[p.Stm][jfr][jto]
-			if hj > bst {
-				bst = hj
-				bstI = j
-			}
-
-		}
-		moves[i], moves[bstI] = moves[bstI], moves[i]
-	}
+	n := len(moves)
 
 	originalAlpha := alpha
 	originalBeta := beta
 	best := -INF
 	var bestMove engine.Move
 
-	for i, m := range moves {
-		p.Make(m)
-		var score int32
-		if i == 0 {
-			score = -AB(p, -beta, -alpha, depth-1)
-		} else {
-			// null-window
-			score = -AB(p, -alpha-1, -alpha, depth-1)
-			if score > alpha && score < beta {
-				// re-search
+	if n > 0 {
+		//hash move is first!
+		off := 0
+		if p.Hash == entry.Hash {
+			hashMove := entry.HashMove
+			for i, m := range moves {
+				if m == hashMove {
+					off = 1
+					moves[0], moves[i] = moves[i], moves[0]
+					break
+				}
+			}
+		}
+
+		//partition captures first
+		write := off + partitionSort(p, moves[off:])
+
+		k := engine.Killers[p.Ply][0]
+		for i := write; i < n; i++ {
+			if k == moves[i] {
+				moves[write], moves[i] = moves[i], moves[write]
+				write++
+				break
+			}
+		}
+
+		k = engine.Killers[p.Ply][1]
+		for i := write; i < n; i++ {
+			if k == moves[i] {
+				moves[write], moves[i] = moves[i], moves[write]
+				write++
+				break
+			}
+		}
+
+		//sorts quiets with history(disabled for now)
+		for i := write; i < n-1 && i < write+0; i++ {
+			ito := moves[i].To()
+			ifr := moves[i].From()
+			bst := engine.History[p.Stm][ifr][ito]
+			bstI := i
+			for j := i + 1; j < n; j++ {
+				jto := moves[j].To()
+				jfr := moves[j].From()
+				hj := engine.History[p.Stm][jfr][jto]
+				if hj > bst {
+					bst = hj
+					bstI = j
+				}
+
+			}
+			moves[i], moves[bstI] = moves[bstI], moves[i]
+		}
+
+		for i, m := range moves {
+			p.Make(m)
+			var score int32
+			if i == 0 {
 				score = -AB(p, -beta, -alpha, depth-1)
+			} else {
+				// null-window
+				score = -AB(p, -alpha-1, -alpha, depth-1)
+				if score > alpha && score < beta {
+					// re-search
+					score = -AB(p, -beta, -alpha, depth-1)
+				}
+			}
+			p.Unmake(m)
+
+			if score > best {
+				best = score
+				bestMove = m
+			}
+			if score > alpha {
+				alpha = score
+			}
+			if alpha >= beta {
+				k1 := engine.Killers[p.Ply][0]
+				if !engine.IsCapture(m.Flags()) && k1 != m {
+					engine.Killers[p.Ply][1] = k1
+					engine.Killers[p.Ply][0] = m
+					engine.History[p.Stm][m.From()][m.To()] += depth * depth
+				}
+				break
 			}
 		}
-		p.Unmake(m)
-
-		if score > best {
-			best = score
-			bestMove = m
-		}
-		if score > alpha {
-			alpha = score
-		}
-		if alpha >= beta {
-			k1 := engine.Killers[p.Ply][0]
-			if !engine.IsCapture(m.Flags()) && k1 != m {
-				engine.Killers[p.Ply][1] = k1
-				engine.Killers[p.Ply][0] = m
-				engine.History[p.Stm][m.From()][m.To()] += depth * depth
-			}
-			break
-		}
-	}
-
-	if len(moves) == 0 {
-		if p.InCheck() {
-			best = -MATE + int32(p.Ply)
-		} else {
-			best = 0
-		}
+	} else if p.InCheck() {
+		best = -MATE + int32(p.Ply)
+	} else {
+		best = 0
 	}
 
 	if isHit && entry.Depth > uint8(depth) {
-		engine.TT[index].HashMove = bestMove
 		return best
 	}
 
@@ -177,7 +175,8 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		Depth:     uint8(depth),
 		Score:     storeScore(best, p.Ply),
 		BoundType: boundType,
-		HashMove:  bestMove}
+		HashMove:  bestMove,
+	}
 
 	return best
 }

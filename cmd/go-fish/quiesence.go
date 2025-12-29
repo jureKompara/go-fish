@@ -6,11 +6,11 @@ import (
 )
 
 func Q(p *engine.Position, alpha, beta int32) int32 {
+	qNodes++
 
 	if p.Is3Fold() {
 		return 0
 	}
-	qNodes++
 
 	checkers := p.Checkers(p.Kings[p.Stm], p.Stm^1)
 
@@ -18,10 +18,15 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 		// ---------------------------
 		// Case 1: side to move is in check → full evasion search
 		// ---------------------------
-		best := -INF
 		moves := p.GenEvasions(checkers)
 
+		if len(moves) == 0 { // checkmate
+			return -MATE + int32(p.Ply)
+		}
+
 		partitionSort(p, moves)
+
+		best := -INF
 
 		for _, m := range moves {
 			p.Make(m)
@@ -37,10 +42,6 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 			if alpha >= beta {
 				return beta
 			}
-		}
-
-		if len(moves) == 0 { // checkmate
-			return -MATE + int32(p.Ply)
 		}
 		return best
 	}
@@ -66,7 +67,6 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 	capCount := tailQuiets(moves)
 
 	for i := range capCount {
-
 		best := i
 		bestScore := engine.MvvLvaScore(p, moves[i])
 		for j := i + 1; j < capCount; j++ {
@@ -110,6 +110,7 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 		}
 	}
 
+	//try the promotions
 	for _, m := range moves[capCount:] {
 		//what we gain from the capture
 		gain := eval.Points[engine.Promo(m.Flags())] - eval.PawnValue

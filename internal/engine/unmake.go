@@ -3,6 +3,7 @@ package engine
 func (p *Position) Unmake(move Move) {
 	p.Ply--
 	state := p.stateStack[p.Ply]
+
 	p.Hash = state.hash
 	p.castleRights = state.castleRights
 	p.epSquare = int(state.epSquare)

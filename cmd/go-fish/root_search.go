@@ -17,9 +17,9 @@ func RootSearch(p *engine.Position, options Options) engine.Move {
 	if options.movetime != 0 {
 		timeBuget = options.movetime / 2
 	} else if p.Stm == engine.WHITE {
-		timeBuget = options.wtime/20 + options.winc/2
+		timeBuget = options.wtime/15 + options.winc/2
 	} else {
-		timeBuget = options.btime/20 + options.binc/2
+		timeBuget = options.btime/15 + options.binc/2
 	}
 
 	deadline := start.Add(time.Duration(timeBuget) * time.Millisecond)
@@ -35,7 +35,11 @@ func RootSearch(p *engine.Position, options Options) engine.Move {
 	}
 
 	prev := int32(0)
-	const base int32 = 25
+	const base int32 = 50
+
+	if options.depth > 255 {
+		options.depth = 255
+	}
 
 	for d := 1; d <= options.depth; d++ {
 

@@ -28,7 +28,11 @@ func genBishopMask(sq int) uint64 {
 		if sq2 < 0 {
 			continue
 		}
-		for !(sq2&7 == 7 || sq2>>3 == 7 || sq2&7 == 0 || sq2>>3 == 0) {
+		for !(file(sq2) == 7 ||
+			rank(sq2) == 7 ||
+			file(sq2) == 0 ||
+			rank(sq2) == 0) {
+
 			set(&out, sq2)
 			sq2 += d
 		}
@@ -38,8 +42,8 @@ func genBishopMask(sq int) uint64 {
 
 func genRookMask(sq int) uint64 {
 	var out uint64
-	file := sq & 7
-	rank := sq >> 3
+	rank := rank(sq)
+	file := file(sq)
 
 	for r := rank + 1; r < 7; r++ {
 		set(&out, r*8+file)
@@ -84,9 +88,9 @@ func genCastleMask() {
 // attack bitboard for every square and relevant occupany possible
 // also generates random zobrist keys
 func init() {
-	for i := range 64 {
-		maskR[i] = genRookMask(i)
-		maskB[i] = genBishopMask(i)
+	for sq := range 64 {
+		maskR[sq] = genRookMask(sq)
+		maskB[sq] = genBishopMask(sq)
 	}
 	genCastleMask()
 	fillMvv()
@@ -155,8 +159,8 @@ func init() {
 			bishopAttTable[sq][idx] = sliderAttacks(sq, occ, bishOff[:])
 		}
 	}
+
 	//zobrsit numbers init
-	//rand.Seed(1)
 	var rng = rand.New(rand.NewPCG(0xdeadbeef, 0x12345678))
 
 	for color := range 2 {

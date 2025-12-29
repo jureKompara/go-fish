@@ -75,7 +75,7 @@ func handlePosition(line string, p *engine.Position) {
 
 	case "fen":
 		// UCI fen is exactly 6 fields: piece placement, stm, castling, ep, halfmove, fullmove
-		if len(tok) <= 6 {
+		if len(tok) < 7 {
 			return
 		}
 		off = 7

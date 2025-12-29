@@ -16,11 +16,13 @@ var ttCutoffs = 0
 
 func main() {
 
-	debug := flag.Bool("debug", false, "runs perft on six positions from the wiki")
 	prof := flag.Bool("prof", false, "enable profiling")
+
+	debug := flag.Bool("debug", false, "runs perft on six positions from the wiki")
 	perft := flag.Bool("perft", false, "run perft")
 	bulk := flag.Bool("bulk", false, "run in bulk mode")
 	divide := flag.Bool("divide", false, "run perftDevide")
+
 	test := flag.Bool("test", false, "run test positions for debuging search")
 	depth := flag.Int("depth", 5, "set depth for search/perft")
 	moveTime := flag.Int("time", 5000, "set time for search")
@@ -52,7 +54,7 @@ func main() {
 		fmt.Printf("depth: %d\n", *depth)
 		fmt.Printf("t: %s\n", elapsed)
 		fmt.Printf("N: %d\n", nodes)
-		fmt.Printf("N/s: %.2f MN/s\n", float64(nodes)/elapsed.Seconds()/1_000_000)
+		fmt.Printf("N/s: %.3f MN/s\n", float64(nodes)/elapsed.Seconds()/1_000_000)
 
 	} else if *debug {
 
@@ -60,11 +62,11 @@ func main() {
 		nodes := engine.Test(*depth)
 		elapsed := time.Since(start)
 		fmt.Printf("t: %s\n", elapsed)
-		fmt.Printf("N/s: %.2f MN/s\n", float64(nodes)/elapsed.Seconds()/1_000_000)
+		fmt.Printf("N/s: %.3f MN/s\n", float64(nodes)/elapsed.Seconds()/1_000_000)
 
 	} else if *test {
 
-		Test(*depth, *moveTime)
+		SearchBench(*depth, *moveTime)
 
 	} else if *divide {
 

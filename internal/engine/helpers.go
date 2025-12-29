@@ -42,11 +42,11 @@ func Between(sq1, sq2 int) uint64 {
 	}
 
 	out := uint64(0)
-	r1 := sq1 >> 3
-	f1 := sq1 & 7
+	r1 := rank(sq1)
+	f1 := file(sq1)
 
-	r2 := sq2 >> 3
-	f2 := sq2 & 7
+	r2 := rank(sq2)
+	f2 := file(sq2)
 
 	dr := r2 - r1
 	df := f2 - f1
@@ -84,11 +84,11 @@ func Line(sq1, sq2 int) uint64 {
 	}
 
 	out := uint64(0)
-	r1 := sq1 >> 3
-	f1 := sq1 & 7
+	r1 := rank(sq1)
+	f1 := file(sq1)
 
-	r2 := sq2 >> 3
-	f2 := sq2 & 7
+	r2 := rank(sq2)
+	f2 := file(sq2)
 
 	dr := r2 - r1
 	df := f2 - f1
@@ -118,4 +118,12 @@ func Line(sq1, sq2 int) uint64 {
 	out |= 1 << sq1
 
 	return out
+}
+
+func rank(sq int) int {
+	return sq >> 3
+}
+
+func file(sq int) int {
+	return sq & 7
 }
