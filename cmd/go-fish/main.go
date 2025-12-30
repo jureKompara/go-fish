@@ -30,7 +30,6 @@ func main() {
 
 	//enables profiling
 	if *prof {
-
 		f, _ := os.Create("cpu.out")
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()

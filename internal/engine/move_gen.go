@@ -18,7 +18,7 @@ func (p *Position) GenMoves() []Move {
 	ksq := p.Kings[us]
 	moves := p.Movebuff[p.Ply][:]
 
-	checkers := p.Checkers(ksq, enemy)
+	checkers := p.Checkers()
 
 	switch {
 	case checkers == 0:
@@ -148,11 +148,15 @@ func (p *Position) genCastles(moves []Move, n int) int {
 	return n
 }
 
-func (p *Position) Checkers(sq int, by int) uint64 {
+func (p *Position) Checkers() uint64 {
+	us := p.Stm
+	sq := p.Kings[us]
+	by := us ^ 1
+
 	return p.pseudoBishop(sq)&(p.PieceBB[by][BISHOP]|p.PieceBB[by][QUEEN]) |
 		p.pseudoRook(sq)&(p.PieceBB[by][ROOK]|p.PieceBB[by][QUEEN]) |
 		knight[sq]&p.PieceBB[by][KNIGHT] |
-		pawn[by^1][sq]&p.PieceBB[by][PAWN]
+		pawn[us][sq]&p.PieceBB[by][PAWN]
 }
 
 func rookAttOcc(sq int, occ uint64) uint64 {

@@ -166,8 +166,27 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 			}
 		}
 
+		//sorts quiets with history
+		for i := write; i < n; i++ {
+			ito := moves[i].To()
+			ifr := moves[i].From()
+			bst := engine.History[p.Stm][ifr][ito]
+			bstI := i
+			for j := i + 1; j < n; j++ {
+				jto := moves[j].To()
+				jfr := moves[j].From()
+				hj := engine.History[p.Stm][jfr][jto]
+				if hj > bst {
+					bst = hj
+					bstI = j
+				}
+			}
+			moves[i], moves[bstI] = moves[bstI], moves[i]
+		}
+
 		//quiets loop
 		for i := quietsStart; i < n; i++ {
+
 			m := moves[i]
 			p.Make(m)
 			if i == 0 {
@@ -199,25 +218,6 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 				break
 			}
 		}
-
-		//sorts quiets with history(disabled for now)
-		/*for i := write; i < n; i++ {
-			ito := moves[i].To()
-			ifr := moves[i].From()
-			bst := engine.History[p.Stm][ifr][ito]
-			bstI := i
-			for j := i + 1; j < n; j++ {
-				jto := moves[j].To()
-				jfr := moves[j].From()
-				hj := engine.History[p.Stm][jfr][jto]
-				if hj > bst {
-					bst = hj
-					bstI = j
-				}
-
-			}
-			moves[i], moves[bstI] = moves[bstI], moves[i]
-		}*/
 
 	} else if p.InCheck() {
 		//checkmate

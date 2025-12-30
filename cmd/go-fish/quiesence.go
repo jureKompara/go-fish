@@ -8,7 +8,7 @@ import (
 func Q(p *engine.Position, alpha, beta int32) int32 {
 	qNodes++
 
-	checkers := p.Checkers(p.Kings[p.Stm], p.Stm^1)
+	checkers := p.Checkers()
 
 	if checkers != 0 {
 		// ---------------------------
@@ -25,8 +25,11 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 		best := -INF
 
 		for _, m := range moves {
+			score := int32(0)
 			p.Make(m)
-			score := -Q(p, -beta, -alpha)
+			if !p.Is3Fold() {
+				score = -Q(p, -beta, -alpha)
+			}
 			p.Unmake(m)
 
 			if score > best {
@@ -49,7 +52,7 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 	stand := eval.Pst(p)
 
 	if stand >= beta {
-		return stand
+		return beta
 	}
 	if stand > alpha {
 		alpha = stand
