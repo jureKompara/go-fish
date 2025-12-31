@@ -3,8 +3,8 @@ package eval
 import "go-fish/internal/engine"
 
 const PawnValue int32 = 100
-const knightValue int32 = 310
-const BishopValue int32 = 320
+const knightValue int32 = 300
+const BishopValue int32 = 310
 const RookValue int32 = 500
 const QueenValue int32 = 900
 const KingValue int32 = 0

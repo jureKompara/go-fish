@@ -22,19 +22,19 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 
 		headCaptures(moves)
 
-		best := -INF
-
 		for _, m := range moves {
 			score := int32(0)
 			p.Make(m)
 			if !p.Is3Fold() {
-				score = -Q(p, -beta, -alpha)
+				// null-window
+				score = -Q(p, -alpha-1, -alpha)
+				if score > alpha && score < beta {
+					// re-search
+					score = -Q(p, -beta, -alpha)
+				}
 			}
 			p.Unmake(m)
 
-			if score > best {
-				best = score
-			}
 			if score > alpha {
 				alpha = score
 			}
@@ -42,7 +42,7 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 				return beta
 			}
 		}
-		return best
+		return alpha
 	}
 	// ---------------------------
 	// Case 2: not in check → normal quiescence
@@ -65,20 +65,22 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 	//and returns captures count
 	capCount := tailQuiets(moves)
 
-	for i := range capCount {
-		best := i
-		bestScore := engine.MvvLvaScore(p, moves[i])
-		for j := i + 1; j < capCount; j++ {
-			s := engine.MvvLvaScore(p, moves[j])
+	//put best capture first
+	if capCount > 1 {
+		best := 0
+		bestScore := engine.MvvLvaScore(p, moves[0])
+		for i := 1; i < capCount; i++ {
+			s := engine.MvvLvaScore(p, moves[i])
 			if s > bestScore {
 				bestScore = s
-				best = j
+				best = i
 			}
 		}
-		moves[i], moves[best] = moves[best], moves[i]
+		moves[0], moves[best] = moves[best], moves[0]
+	}
 
-		m := moves[i]
-
+	//capture loop
+	for _, m := range moves[:capCount] {
 		//what we gain from the capture
 		gain := int32(0)
 
@@ -98,7 +100,14 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 		}
 
 		p.Make(m)
-		score := -Q(p, -beta, -alpha)
+		var score int32
+		// null-window
+		score = -Q(p, -alpha-1, -alpha)
+		if score > alpha && score < beta {
+			// re-search
+			score = -Q(p, -beta, -alpha)
+		}
+
 		p.Unmake(m)
 
 		if score >= beta {
@@ -118,9 +127,14 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 		if stand+gain+50 < alpha {
 			continue
 		}
-
 		p.Make(m)
-		score := -Q(p, -beta, -alpha)
+		var score int32
+		// null-window
+		score = -Q(p, -alpha-1, -alpha)
+		if score > alpha && score < beta {
+			// re-search
+			score = -Q(p, -beta, -alpha)
+		}
 		p.Unmake(m)
 
 		if score >= beta {

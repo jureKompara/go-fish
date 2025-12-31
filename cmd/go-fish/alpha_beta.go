@@ -21,6 +21,12 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		return 0
 	}
 
+	//we start quiesence at leaf nodes
+	if depth == 0 {
+		return Q(p, alpha, beta)
+	}
+
+	//something something checkmate
 	alpha = max(alpha, -MATE+int32(p.Ply))
 	beta = min(beta, MATE-int32(p.Ply))
 
@@ -31,8 +37,8 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	//TT probe
 	index := p.Hash & engine.IndexMask
 	entry := engine.TT[index]
-	TTProbe++
 
+	TTProbe++
 	isHit := entry.Hash == p.Hash
 	if isHit && entry.Depth >= uint8(depth) {
 		ttScore := loadScore(entry.Score, p.Ply)
@@ -52,11 +58,6 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 			ttCutoffs++
 			return ttScore
 		}
-	}
-
-	//we start quiesence at leaf nodes
-	if depth == 0 {
-		return Q(p, alpha, beta)
 	}
 
 	moves := p.GenMoves()
@@ -124,6 +125,7 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 
 			p.Make(m)
 			if i == 0 {
+				//full-window
 				score = -AB(p, -beta, -alpha, depth-1)
 			} else {
 				// null-window
@@ -146,8 +148,8 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 				goto Jmp
 			}
 		}
-
 		quietsStart := write
+		//put killers first
 		k := engine.Killers[p.Ply][0]
 		for i := write; i < n; i++ {
 			if k == moves[i] {
@@ -166,27 +168,26 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 			}
 		}
 
-		//sorts quiets with history
-		for i := write; i < n; i++ {
-			ito := moves[i].To()
-			ifr := moves[i].From()
-			bst := engine.History[p.Stm][ifr][ito]
-			bstI := i
-			for j := i + 1; j < n; j++ {
-				jto := moves[j].To()
-				jfr := moves[j].From()
-				hj := engine.History[p.Stm][jfr][jto]
-				if hj > bst {
-					bst = hj
-					bstI = j
+		//put best history first...ignore the rest
+		if n-write > 1 {
+			to0 := moves[write].To()
+			fr0 := moves[write].From()
+			bst := engine.History[p.Stm][fr0][to0]
+			bstI := write
+			for i := write; i < n; i++ {
+				toi := moves[i].To()
+				fri := moves[i].From()
+				h := engine.History[p.Stm][fri][toi]
+				if h > bst {
+					bst = h
+					bstI = i
 				}
 			}
-			moves[i], moves[bstI] = moves[bstI], moves[i]
+			moves[write], moves[bstI] = moves[bstI], moves[write]
 		}
 
 		//quiets loop
 		for i := quietsStart; i < n; i++ {
-
 			m := moves[i]
 			p.Make(m)
 			if i == 0 {
@@ -228,15 +229,19 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	}
 
 Jmp:
-	if isHit && entry.Depth > uint8(depth) {
-		return best
-	}
 
 	boundType := EXACT
 	if best <= originalAlpha {
 		boundType = UPPER
 	} else if best >= originalBeta {
 		boundType = LOWER
+	}
+
+	if isHit && entry.Depth > uint8(depth) {
+		if boundType == EXACT {
+			engine.TT[index].HashMove = bestMove
+		}
+		return best
 	}
 
 	engine.TT[index] = engine.TTEntry{
