@@ -230,18 +230,15 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 
 Jmp:
 
+	if isHit && entry.Depth > uint8(depth) {
+		return best
+	}
+
 	boundType := EXACT
 	if best <= originalAlpha {
 		boundType = UPPER
 	} else if best >= originalBeta {
 		boundType = LOWER
-	}
-
-	if isHit && entry.Depth > uint8(depth) {
-		if boundType == EXACT {
-			engine.TT[index].HashMove = bestMove
-		}
-		return best
 	}
 
 	engine.TT[index] = engine.TTEntry{
