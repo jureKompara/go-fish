@@ -21,11 +21,6 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		return 0
 	}
 
-	//we start quiesence at leaf nodes
-	if depth == 0 {
-		return Q(p, alpha, beta)
-	}
-
 	//something something checkmate
 	alpha = max(alpha, -MATE+int32(p.Ply))
 	beta = min(beta, MATE-int32(p.Ply))
@@ -34,13 +29,19 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		return alpha
 	}
 
+	//we start quiesence at leaf nodes
+	if depth == 0 {
+		return Q(p, alpha, beta)
+	}
+
 	//TT probe
-	index := p.Hash & engine.IndexMask
-	entry := engine.TT[index]
+	bucket := &engine.TT[p.Hash&engine.IndexMask]
+
+	entry := bucket.Probe(p.Hash)
 
 	TTProbe++
-	isHit := entry.Hash == p.Hash
-	if isHit && entry.Depth >= uint8(depth) {
+
+	if entry != nil && entry.Depth >= uint8(depth) {
 		ttScore := loadScore(entry.Score, p.Ply)
 		TTHit++
 		switch entry.BoundType {
@@ -73,7 +74,7 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 
 		//hash move is first!
 		off := 0
-		if p.Hash == entry.Hash {
+		if entry != nil {
 			hashMove := entry.HashMove
 			for i := range moves {
 				if moves[i] == hashMove {
@@ -94,7 +95,7 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 					}
 					if alpha >= beta {
 						k0 := engine.Killers[p.Ply][0]
-						if !engine.IsCapture(m.Flags()) && k0 != m {
+						if !m.IsCapture() && k0 != m {
 							engine.Killers[p.Ply][1] = k0
 							engine.Killers[p.Ply][0] = m
 							engine.History[p.Stm][m.From()][m.To()] += depth * depth
@@ -148,6 +149,7 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 				goto Jmp
 			}
 		}
+
 		quietsStart := write
 		//put killers first
 		k := engine.Killers[p.Ply][0]
@@ -230,7 +232,7 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 
 Jmp:
 
-	if isHit && entry.Depth > uint8(depth) {
+	if entry != nil && entry.Depth > uint8(depth) {
 		return best
 	}
 
@@ -241,13 +243,15 @@ Jmp:
 		boundType = LOWER
 	}
 
-	engine.TT[index] = engine.TTEntry{
+	newEntry := engine.TTEntry{
 		Hash:      p.Hash,
-		Depth:     uint8(depth),
 		Score:     storeScore(best, p.Ply),
-		BoundType: boundType,
 		HashMove:  bestMove,
+		Depth:     uint8(depth),
+		BoundType: boundType,
 	}
+
+	bucket.Store(entry, newEntry)
 
 	return best
 }

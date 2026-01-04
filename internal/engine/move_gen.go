@@ -27,7 +27,7 @@ func (p *Position) GenMoves() []Move {
 	case checkers&(checkers-1) == 0:
 		c := bits.TrailingZeros64(checkers)
 		// Knight/pawn check: ONLY capture the checker
-		if has(p.PieceBB[enemy][PAWN]|p.PieceBB[enemy][KNIGHT], c) {
+		if has(p.PieceBB[enemy][KNIGHT], c) {
 			p.checkMask = uint64(1) << c
 
 		} else { // If checker is a slider, you can block OR capture
@@ -134,6 +134,7 @@ func (p *Position) genCastles(moves []Move, n int) int {
 		p.Occ&(0b11<<(homeSquare+1)) == 0 &&
 		!p.isAttacked(homeSquare+1, enemy) &&
 		!p.isAttacked(homeSquare+2, enemy) {
+
 		moves[n] = NewMove(homeSquare, homeSquare+2, KCASTLE)
 		n++
 	}
@@ -142,6 +143,7 @@ func (p *Position) genCastles(moves []Move, n int) int {
 		p.Occ&(0b111<<(homeSquare-3)) == 0 &&
 		!p.isAttacked(homeSquare-1, enemy) &&
 		!p.isAttacked(homeSquare-2, enemy) {
+
 		moves[n] = NewMove(homeSquare, homeSquare-2, QCASTLE)
 		n++
 	}
@@ -313,7 +315,7 @@ func (p *Position) genPawnMoves(moves []Move, n int) int {
 	}
 
 	if epLeft != 0 {
-		to := bits.TrailingZeros64(epLeft)
+		to := p.epSquare
 		from := to - 7 + blackOffset
 		capsq := from - 1
 
@@ -332,7 +334,7 @@ func (p *Position) genPawnMoves(moves []Move, n int) int {
 	}
 
 	if epRight != 0 {
-		to := bits.TrailingZeros64(epRight)
+		to := p.epSquare
 		from := to - 9 + blackOffset
 		capsq := from + 1
 

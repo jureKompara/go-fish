@@ -7,7 +7,6 @@ import (
 
 func Q(p *engine.Position, alpha, beta int32) int32 {
 	qNodes++
-
 	checkers := p.Checkers()
 
 	if checkers != 0 {
@@ -44,12 +43,13 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 		}
 		return alpha
 	}
+
 	// ---------------------------
 	// Case 2: not in check → normal quiescence
 	// ---------------------------
 
 	// stand pat: "if we do nothing"
-	stand := eval.EvalPeSTO(p)
+	stand := eval.Eval(p)
 
 	if stand >= beta {
 		return beta
@@ -84,13 +84,12 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 		//what we gain from the capture
 		gain := int32(0)
 
-		flags := m.Flags()
-		if flags == engine.EP {
+		if m.IsEP() {
 			gain = eval.PawnValue
 		} else {
 			gain = eval.Points[p.Board[m.To()]]
-			if engine.IsPromo(flags) {
-				gain += eval.Points[engine.Promo(flags)] - eval.PawnValue
+			if m.IsPromo() {
+				gain += eval.Points[m.Promo()] - eval.PawnValue
 			}
 		}
 
@@ -121,7 +120,7 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 	//try the promotions
 	for _, m := range moves[capCount:] {
 		//what we gain from the capture
-		gain := eval.Points[engine.Promo(m.Flags())] - eval.PawnValue
+		gain := eval.Points[m.Promo()] - eval.PawnValue
 
 		// delta prune
 		if stand+gain+50 < alpha {

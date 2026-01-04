@@ -5,26 +5,26 @@ import "math/bits"
 // returns all evasions
 // asumes checkers is non 0
 func (p *Position) GenEvasions(checkers uint64) []Move {
+
+	moves := p.Movebuff[p.Ply][:]
+
+	if checkers&(checkers-1) != 0 { //2 checkers == not a power of 2
+		//double check we have to move the king
+		n := p.genKingMoves(moves, 0)
+		return moves[:n]
+	}
+
 	us := p.Stm
 	enemy := us ^ 1
 	ksq := p.Kings[us]
 
-	moves := p.Movebuff[p.Ply][:]
+	c := bits.TrailingZeros64(checkers)
+	// Knight(no blocks)
+	if has(p.PieceBB[enemy][KNIGHT], c) {
+		p.checkMask = uint64(1) << c
 
-	if checkers&(checkers-1) == 0 { //only one checker
-		c := bits.TrailingZeros64(checkers)
-		// Knight/pawn check: ONLY capture the checker
-		if has(p.PieceBB[enemy][PAWN]|p.PieceBB[enemy][KNIGHT], c) {
-			p.checkMask = uint64(1) << c
-
-		} else { // If checker is a slider, you can block OR capture
-			p.checkMask = line[ksq][c]
-		}
-
-	} else {
-		//double check we have to move the king
-		n := p.genKingMoves(moves, 0)
-		return moves[:n]
+	} else { // If checker is a slider, you can block OR capture
+		p.checkMask = line[ksq][c]
 	}
 
 	snipers := rookAttTable[ksq][0]&(p.PieceBB[enemy][ROOK]|p.PieceBB[enemy][QUEEN]) |
@@ -177,7 +177,7 @@ func (p *Position) genPawnMoves3(moves []Move, n int) int {
 	}
 
 	if epLeft != 0 {
-		to := bits.TrailingZeros64(epLeft)
+		to := p.epSquare
 		from := to - 7 + blackOffset
 		capsq := from - 1
 
@@ -193,7 +193,7 @@ func (p *Position) genPawnMoves3(moves []Move, n int) int {
 	}
 
 	if epRight != 0 {
-		to := bits.TrailingZeros64(epRight)
+		to := p.epSquare
 		from := to - 9 + blackOffset
 		capsq := from + 1
 

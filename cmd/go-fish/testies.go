@@ -18,7 +18,6 @@ var testFens = []string{
 	"r5k1/5pp1/p1Qpr2p/4p3/4P3/2P2q2/PPP2P1P/4RRK1 w - - 6 21",             //mate in 4(a8 is best!)
 	"8/6p1/1P2k1p1/3R2P1/8/5p2/2P2PP1/6K1 w - - 3 48",
 	"8/8/2P1Q3/p7/7k/8/P1P4P/6K1 w - - 0 43",
-	"r2R2k1/5p1p/5B1P/6P1/p1nP1K2/2P5/8/8 b - - 2 59",
 	"8/8/8/8/3Q1R2/6K1/k5P1/8 w - - 3 48",
 	"4k1r1/p4p2/6p1/2ppP3/4n1P1/P2KP2P/1r6/3R4 b - - 0 33",
 }
@@ -51,14 +50,14 @@ func SearchBench(depth, moveTime int) {
 
 		nps := float64(abNodes+qNodes) / elapsed.Seconds()
 
-		fmt.Println("[", fen, "]")
+		fmt.Println(fen)
 		fmt.Println("->", move)
 		fmt.Println("time: ", elapsed)
 		fmt.Printf("info nodes %d qnodes %d @%.2fM nps\n", abNodes, qNodes, nps/1_000_000)
 
-		//fmt.Println("ttProbes:", TTProbe)
-		//fmt.Println("TT hit rate:   ", float64(TTHit)/float64(TTProbe)*100, "%")
-		//fmt.Println("TT cutoff rate:", float64(ttCutoffs)/float64(TTHit)*100, "%")
+		fmt.Println("ttProbes:", TTProbe)
+		fmt.Println("TT hit rate:   ", float64(TTHit)/float64(TTProbe)*100, "%")
+		fmt.Println("TT cutoff rate:", float64(ttCutoffs)/float64(TTHit)*100, "%")
 
 		fmt.Println("---------------------------------------------------------------")
 	}

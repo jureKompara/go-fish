@@ -47,11 +47,11 @@ var zobristEP [8]uint64
 
 func (p *Position) save(capture uint8) {
 	p.stateStack[p.Ply] = State{
+		p.Hash,
 		capture,
 		p.castleRights,
 		uint8(p.epSquare),
 		uint8(p.HalfMove),
-		p.Hash,
 	}
 }
 
@@ -127,13 +127,13 @@ func (p *Position) VerifyZobrist() bool {
 
 func (p *Position) Is3Fold() bool {
 	if p.HalfMove >= 8 {
-		count := 0
+		repeat := false
 		for i := p.Ply - 2; i >= max(0, p.Ply-p.HalfMove); i -= 2 {
 			if p.Hash == p.HashHistory[i] {
-				count++
-				if count == 2 {
+				if repeat {
 					return true
 				}
+				repeat = true
 			}
 		}
 	}

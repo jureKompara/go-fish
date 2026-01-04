@@ -180,7 +180,7 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 	}
 
 	if epLeft != 0 {
-		to := bits.TrailingZeros64(epLeft)
+		to := p.epSquare
 		from := to - 7 + blackOffset
 		capsq := from - 1
 
@@ -197,7 +197,7 @@ func (p *Position) genPawnMoves2(moves []Move, n int) int {
 	}
 
 	if epRight != 0 {
-		to := bits.TrailingZeros64(epRight)
+		to := p.epSquare
 		from := to - 9 + blackOffset
 		capsq := from + 1
 

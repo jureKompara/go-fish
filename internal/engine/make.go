@@ -9,12 +9,11 @@ func (p *Position) Make(move Move) {
 	to := move.To()
 	piece := p.Board[fr]
 	capture := p.Board[to]
-	flags := move.Flags()
 	p.save(capture)
 	p.HashHistory[p.Ply] = p.Hash
 	p.Ply++
 
-	if piece == PAWN || IsCapture(flags) {
+	if piece == PAWN || move.IsCapture() {
 		p.HalfMove = 0
 	} else {
 		p.HalfMove++
@@ -34,7 +33,7 @@ func (p *Position) Make(move Move) {
 	p.Board[to] = piece
 	p.Hash ^= zobristPiece[us][piece][to]
 
-	if capture == EMPTY { //not a capture
+	if capture == EMPTY { //not a capture(could be EP)
 		p.Occ ^= frMask | toMask // empty-to: toggle both fr and to
 	} else { //capture
 		p.PieceBB[enemy][capture] ^= toMask
@@ -45,7 +44,9 @@ func (p *Position) Make(move Move) {
 
 	if piece == KING {
 		p.Kings[us] = to
-		if IsCastle(flags) {
+		if move.IsCastle() {
+			flags := move.Flags()
+
 			homeRank := us * 56
 
 			t := homeRank + 5 - 2*int(flags)
@@ -75,7 +76,7 @@ func (p *Position) Make(move Move) {
 	//is the one behind 'to' so we can use it for setting epSquare
 	//after a double push or clearing the pawn after an ep capture
 	switch {
-	case flags == EP:
+	case move.IsEP():
 		ep := to - 8 + 16*us
 		epMask := uint64(1) << ep
 		p.PieceBB[enemy][PAWN] ^= epMask
@@ -84,13 +85,13 @@ func (p *Position) Make(move Move) {
 		p.Board[ep] = EMPTY
 		p.Hash ^= zobristPiece[enemy][PAWN][ep]
 
-	case flags == DOUBLE:
+	case move.IsDouble():
 		ep := to - 8 + 16*us
 		p.epSquare = ep
 		p.Hash ^= zobristEP[ep&7]
 
-	case IsPromo(flags):
-		promo := Promo(flags)
+	case move.IsPromo():
+		promo := Promo(move.Flags())
 		p.PieceBB[us][PAWN] ^= toMask
 		p.PieceBB[us][promo] ^= toMask
 		p.Board[to] = promo

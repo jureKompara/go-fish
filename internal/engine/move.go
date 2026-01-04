@@ -41,9 +41,14 @@ func (m Move) From() int    { return int(m & 0x3F) }
 func (m Move) To() int      { return int((m >> 6) & 0x3F) }
 func (m Move) Flags() uint8 { return uint8((m >> 12) & 0xF) }
 
+func (m Move) IsCapture() bool { return m&0x4000 != 0 }
+func (m Move) IsPromo() bool   { return m >= 0x8000 }
+func (m Move) IsCastle() bool  { return m < 0x2000 }
+func (m Move) IsDouble() bool  { return m&0xF000 == 0x3000 }
+func (m Move) IsEP() bool      { return m&0xF000 == 0x5000 }
+func (m Move) Promo() uint8    { return uint8((m >> 12) & 0x03) }
+
 func IsCapture(flag uint8) bool { return flag&4 != 0 }
-func IsPromo(flag uint8) bool   { return flag >= 8 }
-func IsCastle(flag uint8) bool  { return flag <= 1 }
 
 // this only makes sense if the move is a promo
 func Promo(flag uint8) uint8 {
@@ -61,7 +66,7 @@ func (m Move) Uci() string {
 	tr := to >> 3
 	tf := to & 7
 
-	if IsPromo(flag) {
+	if m.IsPromo() {
 		switch Promo(flag) {
 		case KNIGHT:
 			return fmt.Sprintf("%c%d%c%dn", f+'a', r+1, tf+'a', tr+1)

@@ -10,7 +10,7 @@ import (
 func headCaptures(moves []engine.Move) int {
 	capCount := 0
 	for i := range moves {
-		if engine.IsCapture(moves[i].Flags()) {
+		if moves[i].IsCapture() {
 			moves[capCount], moves[i] = moves[i], moves[capCount]
 			capCount++
 		}
@@ -25,7 +25,7 @@ func headCaptures(moves []engine.Move) int {
 func tailQuiets(moves []engine.Move) int {
 	quietIdx := len(moves)
 	for i := quietIdx - 1; i >= 0; i-- {
-		if !engine.IsCapture(moves[i].Flags()) {
+		if !moves[i].IsCapture() {
 			quietIdx--
 			moves[quietIdx], moves[i] = moves[i], moves[quietIdx]
 		}
