@@ -8,7 +8,7 @@ func (p *Position) GenEvasions(checkers uint64) []Move {
 
 	moves := p.Movebuff[p.Ply][:]
 
-	if checkers&(checkers-1) != 0 { //2 checkers == not a power of 2
+	if checkers&(checkers-1) != 0 { //2 checkers == not a power of 2)
 		//double check we have to move the king
 		n := p.genKingMoves(moves, 0)
 		return moves[:n]

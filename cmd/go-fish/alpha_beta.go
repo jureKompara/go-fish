@@ -21,17 +21,17 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		return 0
 	}
 
+	//we start quiesence at leaf nodes
+	if depth == 0 {
+		return Q(p, alpha, beta)
+	}
+
 	//something something checkmate
 	alpha = max(alpha, -MATE+int32(p.Ply))
 	beta = min(beta, MATE-int32(p.Ply))
 
 	if alpha >= beta {
 		return alpha
-	}
-
-	//we start quiesence at leaf nodes
-	if depth == 0 {
-		return Q(p, alpha, beta)
 	}
 
 	//TT probe
@@ -243,15 +243,13 @@ Jmp:
 		boundType = LOWER
 	}
 
-	newEntry := engine.TTEntry{
+	bucket.Store(entry, engine.TTEntry{
 		Hash:      p.Hash,
 		Score:     storeScore(best, p.Ply),
 		HashMove:  bestMove,
 		Depth:     uint8(depth),
 		BoundType: boundType,
-	}
-
-	bucket.Store(entry, newEntry)
+	})
 
 	return best
 }

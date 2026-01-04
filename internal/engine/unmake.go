@@ -33,14 +33,13 @@ func (p *Position) Unmake(move Move) {
 	p.Board[to] = EMPTY
 	p.Occ ^= toMask | fromMask
 
-	flags := move.Flags()
 	if isPromo {
-		p.PieceBB[us][Promo(flags)] ^= toMask
+		p.PieceBB[us][Promo(move.Flags())] ^= toMask
 	} else {
 		p.PieceBB[us][piece] ^= toMask
 	}
 
-	if flags == EP {
+	if move.IsEP() {
 
 		behind := to - 8 + 16*us
 		p.Board[behind] = PAWN
@@ -58,9 +57,9 @@ func (p *Position) Unmake(move Move) {
 	}
 
 	if piece == KING {
-
 		p.Kings[us] = from
 		if move.IsCastle() {
+			flags := move.Flags()
 			homeRank := us * 56
 
 			t := homeRank + 5 - 2*int(flags)
