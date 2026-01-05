@@ -21,17 +21,17 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		return 0
 	}
 
-	//we start quiesence at leaf nodes
-	if depth == 0 {
-		return Q(p, alpha, beta)
-	}
-
 	//something something checkmate
 	alpha = max(alpha, -MATE+int32(p.Ply))
 	beta = min(beta, MATE-int32(p.Ply))
 
 	if alpha >= beta {
 		return alpha
+	}
+
+	//we start quiesence at leaf nodes
+	if depth == 0 {
+		return Q(p, alpha, beta)
 	}
 
 	//TT probe
@@ -94,11 +94,13 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 						alpha = score
 					}
 					if alpha >= beta {
-						k0 := engine.Killers[p.Ply][0]
-						if !m.IsCapture() && k0 != m {
-							engine.Killers[p.Ply][1] = k0
-							engine.Killers[p.Ply][0] = m
+						if !m.IsCapture() {
 							engine.History[p.Stm][m.From()][m.To()] += depth * depth
+							k0 := engine.Killers[p.Ply][0]
+							if k0 != m {
+								engine.Killers[p.Ply][1] = k0
+								engine.Killers[p.Ply][0] = m
+							}
 						}
 						goto Jmp
 					}
@@ -212,11 +214,11 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 				alpha = score
 			}
 			if alpha >= beta {
+				engine.History[p.Stm][m.From()][m.To()] += depth * depth
 				k0 := engine.Killers[p.Ply][0]
 				if k0 != m {
 					engine.Killers[p.Ply][1] = k0
 					engine.Killers[p.Ply][0] = m
-					engine.History[p.Stm][m.From()][m.To()] += depth * depth
 				}
 				break
 			}
@@ -243,7 +245,7 @@ Jmp:
 		boundType = LOWER
 	}
 
-	bucket.Store(entry, engine.TTEntry{
+	bucket.Store(entry, &engine.TTEntry{
 		Hash:      p.Hash,
 		Score:     storeScore(best, p.Ply),
 		HashMove:  bestMove,

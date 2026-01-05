@@ -26,11 +26,12 @@ func (p *Position) GenMoves() []Move {
 
 	case checkers&(checkers-1) == 0:
 		c := bits.TrailingZeros64(checkers)
-		// Knight/pawn check: ONLY capture the checker
+		// Knight check: ONLY capture the knight
 		if has(p.PieceBB[enemy][KNIGHT], c) {
 			p.checkMask = uint64(1) << c
 
 		} else { // If checker is a slider, you can block OR capture
+			// works for pawn too because line[ksq][c]==1<<c for pawn check
 			p.checkMask = line[ksq][c]
 		}
 

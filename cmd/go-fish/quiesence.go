@@ -19,7 +19,21 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 			return -MATE + int32(p.Ply)
 		}
 
-		headCaptures(moves)
+		capCount := headCaptures(moves)
+
+		//put best capture first
+		if capCount > 1 {
+			best := 0
+			bestScore := engine.MvvLvaScore(p, moves[0])
+			for i := 1; i < capCount; i++ {
+				s := engine.MvvLvaScore(p, moves[i])
+				if s > bestScore {
+					bestScore = s
+					best = i
+				}
+			}
+			moves[0], moves[best] = moves[best], moves[0]
+		}
 
 		for _, m := range moves {
 			score := int32(0)
@@ -81,13 +95,11 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 
 	//capture loop
 	for _, m := range moves[:capCount] {
-		//what we gain from the capture
-		gain := int32(0)
+		//what we gain from EP
+		gain := eval.PawnValue
 
-		if m.IsEP() {
-			gain = eval.PawnValue
-		} else {
-			gain = eval.Points[p.Board[m.To()]]
+		if !m.IsEP() {
+			gain = eval.Points[p.Board[m.To()]] //captured
 			if m.IsPromo() {
 				gain += eval.Points[m.Promo()] - eval.PawnValue
 			}
@@ -99,9 +111,8 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 		}
 
 		p.Make(m)
-		var score int32
 		// null-window
-		score = -Q(p, -alpha-1, -alpha)
+		score := -Q(p, -alpha-1, -alpha)
 		if score > alpha && score < beta {
 			// re-search
 			score = -Q(p, -beta, -alpha)
@@ -109,27 +120,28 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 
 		p.Unmake(m)
 
-		if score >= beta {
-			return beta
-		}
 		if score > alpha {
 			alpha = score
 		}
+		if alpha >= beta {
+			return beta
+		}
 	}
 
-	//try the promotions
+	//promo loop
 	for _, m := range moves[capCount:] {
-		//what we gain from the capture
+
+		//what we gain from the promo
 		gain := eval.Points[m.Promo()] - eval.PawnValue
 
 		// delta prune
 		if stand+gain+50 < alpha {
 			continue
 		}
+
 		p.Make(m)
-		var score int32
 		// null-window
-		score = -Q(p, -alpha-1, -alpha)
+		score := -Q(p, -alpha-1, -alpha)
 		if score > alpha && score < beta {
 			// re-search
 			score = -Q(p, -beta, -alpha)

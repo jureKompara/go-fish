@@ -13,11 +13,16 @@ func (p *Position) Unmake(move Move) {
 	us := p.Stm
 	enemy := us ^ 1
 
-	isPromo := move.IsPromo()
 	to := move.To()
+	toMask := uint64(1) << to
+
 	var piece uint8 = PAWN
-	if !isPromo {
+	if !move.IsPromo() {
 		piece = p.Board[to]
+		p.PieceBB[us][piece] ^= toMask
+
+	} else {
+		p.PieceBB[us][move.Promo()] ^= toMask
 	}
 
 	from := move.From()
@@ -27,17 +32,10 @@ func (p *Position) Unmake(move Move) {
 	p.ColorOcc[us] ^= fromMask
 	p.Board[from] = piece
 
-	toMask := uint64(1) << to
 	//we clear the to square
 	p.ColorOcc[us] ^= toMask
 	p.Board[to] = EMPTY
 	p.Occ ^= toMask | fromMask
-
-	if isPromo {
-		p.PieceBB[us][Promo(move.Flags())] ^= toMask
-	} else {
-		p.PieceBB[us][piece] ^= toMask
-	}
 
 	if move.IsEP() {
 
@@ -49,6 +47,7 @@ func (p *Position) Unmake(move Move) {
 		p.Occ ^= behindMask
 
 	} else if move.IsCapture() {
+
 		capture := state.capture
 		p.Board[to] = capture
 		p.PieceBB[enemy][capture] ^= toMask

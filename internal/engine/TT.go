@@ -25,17 +25,17 @@ func (b *TTBucket) Probe(hash uint64) *TTEntry {
 	return nil
 }
 
-func (b *TTBucket) Store(hit *TTEntry, e TTEntry) {
+func (b *TTBucket) Store(hit *TTEntry, e *TTEntry) {
 
 	if hit != nil {
-		*hit = e
+		*hit = *e
 		return
 	}
 
 	if b.A.Depth <= b.B.Depth {
-		b.A = e
+		b.A = *e
 	} else {
-		b.B = e
+		b.B = *e
 	}
 
 }

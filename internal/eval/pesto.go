@@ -29,10 +29,7 @@ var phaseIncPesto = [6]int32{
 var PSQMG [2][6][64]int32
 var PSQEG [2][6][64]int32
 
-// --- Black-POV PeSTO PSTs (rank 8 first, rank 1 last) ---
-// Order: pawn, knight, bishop, rook, queen, king  (PeSTO order)
-
-var mgPSTBlack = [6][64]int32{
+var mgPST = [6][64]int32{
 
 	// knight
 	{
@@ -102,7 +99,7 @@ var mgPSTBlack = [6][64]int32{
 	},
 }
 
-var egPSTBlack = [6][64]int32{
+var egPST = [6][64]int32{
 
 	// knight
 	{
@@ -179,11 +176,11 @@ func init() {
 
 		for sq := range 64 {
 			//pesto PSQ
-			PSQMG[engine.WHITE][piece][sq] = mgMat + mgPSTBlack[piece][sq]
-			PSQEG[engine.WHITE][piece][sq] = egMat + egPSTBlack[piece][sq]
+			PSQMG[engine.WHITE][piece][sq] = mgMat + mgPST[piece][sq]
+			PSQEG[engine.WHITE][piece][sq] = egMat + egPST[piece][sq]
 
-			PSQMG[engine.BLACK][piece][sq] = mgMat + mgPSTBlack[piece][sq^56]
-			PSQEG[engine.BLACK][piece][sq] = egMat + egPSTBlack[piece][sq^56]
+			PSQMG[engine.BLACK][piece][sq] = mgMat + mgPST[piece][sq^56]
+			PSQEG[engine.BLACK][piece][sq] = egMat + egPST[piece][sq^56]
 		}
 	}
 }
