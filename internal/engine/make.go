@@ -75,7 +75,13 @@ func (p *Position) Make(move Move) {
 	//for both double pushes and ep captures the relevant squre
 	//is the one behind 'to' so we can use it for setting epSquare
 	//after a double push or clearing the pawn after an ep capture
+
 	switch {
+	case move.IsDouble():
+		ep := to - 8 + 16*us
+		p.epSquare = ep
+		p.Hash ^= zobristEP[ep&7]
+
 	case move.IsEP():
 		ep := to - 8 + 16*us
 		epMask := uint64(1) << ep
@@ -85,13 +91,8 @@ func (p *Position) Make(move Move) {
 		p.Board[ep] = EMPTY
 		p.Hash ^= zobristPiece[enemy][PAWN][ep]
 
-	case move.IsDouble():
-		ep := to - 8 + 16*us
-		p.epSquare = ep
-		p.Hash ^= zobristEP[ep&7]
-
 	case move.IsPromo():
-		promo := Promo(move.Flags())
+		promo := move.Promo()
 		p.PieceBB[us][PAWN] ^= toMask
 		p.PieceBB[us][promo] ^= toMask
 		p.Board[to] = promo

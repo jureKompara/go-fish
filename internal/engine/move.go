@@ -46,20 +46,14 @@ func (m Move) IsPromo() bool   { return m >= 0x8000 }
 func (m Move) IsCastle() bool  { return m < 0x2000 }
 func (m Move) IsDouble() bool  { return m&0xF000 == 0x3000 }
 func (m Move) IsEP() bool      { return m&0xF000 == 0x5000 }
-func (m Move) Promo() uint8    { return uint8((m >> 12) & 0x03) }
-
-func IsCapture(flag uint8) bool { return flag&4 != 0 }
 
 // this only makes sense if the move is a promo
-func Promo(flag uint8) uint8 {
-	return flag & 0x3
-}
+func (m Move) Promo() uint8 { return uint8((m >> 12) & 0x03) }
 
 // converts a move to UCI notation (e4e5 c7c8q etc.)
 func (m Move) Uci() string {
 	from := m.From()
 	to := m.To()
-	flag := m.Flags()
 
 	r := from >> 3
 	f := from & 7
@@ -67,7 +61,7 @@ func (m Move) Uci() string {
 	tf := to & 7
 
 	if m.IsPromo() {
-		switch Promo(flag) {
+		switch m.Promo() {
 		case KNIGHT:
 			return fmt.Sprintf("%c%d%c%dn", f+'a', r+1, tf+'a', tr+1)
 		case BISHOP:
