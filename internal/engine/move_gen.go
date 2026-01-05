@@ -26,12 +26,12 @@ func (p *Position) GenMoves() []Move {
 
 	case checkers&(checkers-1) == 0:
 		c := bits.TrailingZeros64(checkers)
-		// Knight check: ONLY capture the knight
+		// Knight check: ONLY capture
 		if has(p.PieceBB[enemy][KNIGHT], c) {
 			p.checkMask = uint64(1) << c
 
 		} else { // If checker is a slider, you can block OR capture
-			// works for pawn too because line[ksq][c]==1<<c for pawn check
+			//works for pawns too
 			p.checkMask = line[ksq][c]
 		}
 
@@ -57,6 +57,8 @@ func (p *Position) GenMoves() []Move {
 		}
 	}
 
+	//mask filters out squares that are our pieces
+	//and squares that dont solve check
 	mask := ^p.ColorOcc[us] & p.checkMask
 
 	n := 0
@@ -127,11 +129,15 @@ func (p *Position) genKingMoves(moves []Move, n int) int {
 }
 
 func (p *Position) genCastles(moves []Move, n int) int {
+	cr := p.castleRights
+	if cr == 0 {
+		return n
+	}
 	us := p.Stm
 	enemy := us ^ 1
 	homeSquare := us*56 + 4
 	//kingside castle
-	if p.castleRights&(0b0001<<(2*us)) != 0 &&
+	if cr&(0b0001<<(2*us)) != 0 &&
 		p.Occ&(0b11<<(homeSquare+1)) == 0 &&
 		!p.isAttacked(homeSquare+1, enemy) &&
 		!p.isAttacked(homeSquare+2, enemy) {
@@ -140,7 +146,7 @@ func (p *Position) genCastles(moves []Move, n int) int {
 		n++
 	}
 	//queenside castle
-	if p.castleRights&(0b0010<<(2*us)) != 0 &&
+	if cr&(0b0010<<(2*us)) != 0 &&
 		p.Occ&(0b111<<(homeSquare-3)) == 0 &&
 		!p.isAttacked(homeSquare-1, enemy) &&
 		!p.isAttacked(homeSquare-2, enemy) {

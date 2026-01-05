@@ -160,7 +160,7 @@ func init() {
 		}
 	}
 
-	//zobrsit numbers init
+	//zobrist numbers init
 	var rng = rand.New(rand.NewPCG(0xdeadbeef, 0x12345678))
 
 	for color := range 2 {
