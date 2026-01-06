@@ -61,6 +61,29 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		}
 	}
 
+	// Null-move pruning
+	if depth >= 3 && !p.InCheck() &&
+		(p.PieceBB[p.Stm][engine.KNIGHT]|
+			p.PieceBB[p.Stm][engine.BISHOP]|
+			p.PieceBB[p.Stm][engine.ROOK]|
+			p.PieceBB[p.Stm][engine.QUEEN]) != 0 {
+
+		// reduction R: classic is 2 + depth/4 (cap a bit)
+		R := min(2+depth/4, depth-1)
+
+		p.MakeNull()
+
+		// Null search uses a null window at beta
+		score := -AB(p, -beta, -beta+1, depth-1-R)
+
+		p.UnmakeNull()
+
+		if score >= beta {
+			return beta // fail-high cutoff
+		}
+
+	}
+
 	moves := p.GenMoves()
 	n := len(moves)
 

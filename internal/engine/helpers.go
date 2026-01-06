@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"fmt"
 	"math/bits"
 )
 
@@ -20,20 +19,6 @@ func PopLSB(bb *uint64) int {
 	lsb_ix := bits.TrailingZeros64(*bb)
 	*bb &= *bb - 1
 	return lsb_ix
-}
-
-// prints a bitboard as a chessboard
-func PrintBB(bb uint64) {
-	for rank := 7; rank >= 0; rank-- {
-		for file := range 8 {
-			if has(bb, rank*8+file) {
-				fmt.Print(" X ")
-			} else {
-				fmt.Print(" _ ")
-			}
-		}
-		fmt.Print("\n")
-	}
 }
 
 func Between(sq1, sq2 int) uint64 {

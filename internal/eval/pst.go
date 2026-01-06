@@ -1,7 +1,5 @@
 package eval
 
-import "go-fish/internal/engine"
-
 const PawnValue int32 = 100
 const knightValue int32 = 310
 const BishopValue int32 = 320
@@ -18,6 +16,7 @@ var Points = [6]int32{
 	KingValue,
 }
 
+/*
 // [piece][square] from Black's POV
 var pst = [6][64]int32{
 
@@ -165,3 +164,4 @@ func Eval(p *engine.Position) int32 {
 
 	return score * int32(1-2*p.Stm)
 }
+*/

@@ -1,6 +1,5 @@
 package eval
 
-/*
 import (
 	"go-fish/internal/engine"
 	"math/bits"
@@ -232,4 +231,3 @@ func PeSTO(p *engine.Position) int32 {
 	// side-to-move POV: WHITE stm -> keep, BLACK stm -> negate
 	return score * int32(1-2*p.Stm)
 }
-*/

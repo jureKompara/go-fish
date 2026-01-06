@@ -14,12 +14,8 @@ var testFens = []string{
 	"8/4R3/8/5Q2/1P2n3/1B6/PKPk4/8 w - - 7 77",                             //mate in 2(xe4 correct)
 	"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",             //startpos
 	"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", //kiwi
-	"r1bqk2r/ppppbppp/2n2n2/4p3/N3P3/3B1N2/PPPP1PPP/R1BQK2R w KQkq - 0 1",  //omar
 	"r5k1/5pp1/p1Qpr2p/4p3/4P3/2P2q2/PPP2P1P/4RRK1 w - - 6 21",             //mate in 4(a8 is best!)
-	"8/6p1/1P2k1p1/3R2P1/8/5p2/2P2PP1/6K1 w - - 3 48",
-	"8/8/2P1Q3/p7/7k/8/P1P4P/6K1 w - - 0 43",
-	"8/8/8/8/3Q1R2/6K1/k5P1/8 w - - 3 48",
-	"4k1r1/p4p2/6p1/2ppP3/4n1P1/P2KP2P/1r6/3R4 b - - 0 33",
+	"r5k1/1bp2ppp/p2P4/1p6/3P4/2P2qP1/P4B2/2Q2K2 b - - 4 30",               //hangs on deep mate
 }
 
 func SearchBench(depth, moveTime int) {

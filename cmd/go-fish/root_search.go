@@ -17,9 +17,9 @@ func RootSearch(p *engine.Position, options Options) engine.Move {
 	if options.movetime != 0 {
 		timeBuget = options.movetime / 2
 	} else if p.Stm == engine.WHITE {
-		timeBuget = options.wtime/15 + options.winc/2
+		timeBuget = options.wtime/20 + options.winc/2
 	} else {
-		timeBuget = options.btime/15 + options.binc/2
+		timeBuget = options.btime/20 + options.binc/2
 	}
 
 	deadline := start.Add(time.Duration(timeBuget) * time.Millisecond)
@@ -29,9 +29,9 @@ func RootSearch(p *engine.Position, options Options) engine.Move {
 	n := len(moves)
 	switch n {
 	case 0:
-		return 0
+		return 0 //idk what would be best here this should probably not be called anyway
 	case 1:
-		return moves[0]
+		return moves[0] //this is good but it doesnt calculate any eval for a GUI...
 	}
 
 	prev := int32(0)

@@ -63,7 +63,7 @@ func Q(p *engine.Position, alpha, beta int32) int32 {
 	// ---------------------------
 
 	// stand pat: "if we do nothing"
-	stand := eval.Eval(p)
+	stand := eval.PeSTO(p)
 
 	if stand >= beta {
 		return beta
