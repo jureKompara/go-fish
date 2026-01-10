@@ -68,7 +68,6 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 			p.PieceBB[p.Stm][engine.ROOK]|
 			p.PieceBB[p.Stm][engine.QUEEN]) != 0 {
 
-		// reduction R: classic is 2 + depth/4 (cap a bit)
 		R := min(2+depth/4, depth-1)
 
 		p.MakeNull()
@@ -81,7 +80,6 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 		if score >= beta {
 			return beta // fail-high cutoff
 		}
-
 	}
 
 	moves := p.GenMoves()
@@ -256,10 +254,6 @@ func AB(p *engine.Position, alpha, beta int32, depth int) int32 {
 	}
 
 Jmp:
-
-	if entry != nil && entry.Depth > uint8(depth) {
-		return best
-	}
 
 	boundType := EXACT
 	if best <= originalAlpha {

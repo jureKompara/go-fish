@@ -5,6 +5,7 @@ func (p *Position) MakeNull() {
 
 	p.save(0xFF)
 	p.Ply++
+	p.HalfMove++
 
 	if p.epSquare != 64 { // REMOVE old EP
 		p.Hash ^= zobristEP[p.epSquare&7]
@@ -17,8 +18,15 @@ func (p *Position) MakeNull() {
 func (p *Position) UnmakeNull() {
 	p.Stm ^= 1
 	p.Ply--
+	p.HalfMove--
 
 	state := p.stateStack[p.Ply]
+
+	/*assert that halfmove doesnt desync!!!
+	if p.HalfMove != int(state.halfmove) {
+		panic("ERROR: halfmove desync")
+	}
+	*/
 
 	p.epSquare = int(state.epSquare)
 	p.Hash = state.hash

@@ -16,6 +16,9 @@ var testFens = []string{
 	"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", //kiwi
 	"r5k1/5pp1/p1Qpr2p/4p3/4P3/2P2q2/PPP2P1P/4RRK1 w - - 6 21",             //mate in 4(a8 is best!)
 	"r5k1/1bp2ppp/p2P4/1p6/3P4/2P2qP1/P4B2/2Q2K2 b - - 4 30",               //hangs on deep mate
+	"1r6/1p3p2/p1p1kp2/4p3/3r3p/1R5P/PP3PP1/2R3K1 b - - 6 30",
+	"1r6/1p3p2/p1pk1p2/4p3/3r3p/1R5P/PP3PP1/2R3K1 w - - 7 31",
+	"1r6/1p3p2/p1pk1p2/4p3/3r3p/5R1P/PP3PP1/2R3K1 b - - 8 31",
 }
 
 func SearchBench(depth, moveTime int) {

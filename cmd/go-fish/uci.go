@@ -52,8 +52,10 @@ func handleUci(req string, p *engine.Position) {
 	case "quit":
 		os.Exit(0)
 
-	case "stop":
-		os.Exit(0)
+	case "ucinewgame":
+		//reset TT and history
+		engine.TT = [1 << engine.TTSize]engine.TTBucket{}
+		engine.History = [2][64][64]int{}
 	}
 }
 
